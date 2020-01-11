@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Hub.unity
+    guid: b12d7772574e04a4d92566a9ca191cc5
+  - enabled: 1
+    path: Assets/Scenes/TicTacToe.unity
+    guid: 2cda990e2423bbf4892e6590ba056729
+  - enabled: 1
+    path: Assets/Scenes/Snake.unity
+    guid: c75b66175ea890443a5c888052510655
+  - enabled: 1
+    path: Assets/Scenes/Breakout.unity
+    guid: fa1ce6f4a298b504eb20ad2417197a88
+  - enabled: 1
+    path: Assets/Scenes/MatchTree.unity
+    guid: aa490abf461f7304aa272f6eb78b8ea6
+  m_configObjects: {}
