@@ -93,11 +93,15 @@ public class GemManager : MonoBehaviour
         GemSockets.Add(new List<GemSocket>());
         bool isEven = GemSockets.Count % 2 == 0;
         int rows = isEven ? MAX_START_GEMS_PER_ROW : MAX_START_GEMS_PER_ROW - 1;
-        float x = isEven ? -totalWidthHalf : -totalWidthHalf + (gemHalfWidth * 0.5f);
-        float y = GemSockets[GemSockets.Count - 2][0].pos.y - gemHalfWidth - GEM_MARGIN;
-        for (int i = 0; i < rows; i++)
+        Func<int, float> x = (row) =>
         {
-            GemSockets[GemSockets.Count - 1].Add(new GemSocket(null, new Vector2(x, y)));
+            return isEven ? -totalWidthHalf + (row * gemHalfWidth) + (row * GEM_MARGIN)
+             : -totalWidthHalf + (gemHalfWidth * 0.5f) + (row * gemHalfWidth) + (row * GEM_MARGIN);
+        };
+        float y = GemSockets[GemSockets.Count - 2][0].pos.y - gemHalfWidth - GEM_MARGIN;
+        for (int row = 0; row < rows; row++)
+        {
+            GemSockets[GemSockets.Count - 1].Add(new GemSocket(null, new Vector2(x(row), y)));
         }
     }
 
@@ -116,9 +120,10 @@ public class GemManager : MonoBehaviour
                 }
             }
         }
-        Debug.Log(side);
-        Debug.Log(recruiterRow);
 
+        Vector2 socketPos = new Vector2();
+        bool isEvenRow = (recruiterRow + 1) % 2 == 0;
+        int indexInRow = 0;
         if (side == AttachSide.LEFTTOP || side == AttachSide.RIGHTTOP)
         {
             if (recruiterRow == GemSockets.Count - 1)
@@ -126,10 +131,19 @@ public class GemManager : MonoBehaviour
 
             if (recruiterRow != -1 && recruiterCol != -1)
             {
-                int indexInRow = side == AttachSide.LEFTTOP ? recruiterCol - 1 : recruiterCol + 1;
+                if (side == AttachSide.LEFTTOP)
+                {
+                    indexInRow = recruiterCol - 1;
+                    if (!isEvenRow) indexInRow++;
+                }
+                else
+                {
+                    indexInRow = recruiterCol + 1;
+                    if (isEvenRow) indexInRow--;
+                }
                 if (indexInRow < 0) indexInRow = 0;
                 if (indexInRow >= GemSockets[recruiterRow + 1].Count) indexInRow = GemSockets[GemSockets.Count - 1].Count - 1;
-                Vector2 socketPos = GemSockets[recruiterRow + 1][indexInRow].pos;
+                socketPos = GemSockets[recruiterRow + 1][indexInRow].pos;
                 GemSockets[recruiterRow + 1][indexInRow] = new GemSocket(gem, socketPos);
             }
             else
@@ -141,10 +155,19 @@ public class GemManager : MonoBehaviour
         {
             if (recruiterRow != -1 && recruiterCol != -1)
             {
-                int indexInRow = side == AttachSide.LEFTBOT ? recruiterCol - 1 : recruiterCol + 1;
+                if (side == AttachSide.LEFTBOT)
+                {
+                    indexInRow = recruiterCol - 1;
+                    if (!isEvenRow) indexInRow++;
+                }
+                else
+                {
+                    indexInRow = recruiterCol + 1;
+                    if (isEvenRow) indexInRow--;
+                }
                 if (indexInRow < 0) indexInRow = 0;
                 if (indexInRow >= GemSockets[recruiterRow - 1].Count) indexInRow = GemSockets[GemSockets.Count - 1].Count - 1;
-                Vector2 socketPos = GemSockets[recruiterRow - 1][indexInRow].pos;
+                socketPos = GemSockets[recruiterRow - 1][indexInRow].pos;
                 GemSockets[recruiterRow - 1][indexInRow] = new GemSocket(gem, socketPos);
             }
             else
@@ -156,10 +179,10 @@ public class GemManager : MonoBehaviour
         {
             if (recruiterRow != -1 && recruiterCol != -1)
             {
-                int indexInRow = side == AttachSide.LEFTMIDDLE ? recruiterCol - 1 : recruiterCol + 1;
+                indexInRow = side == AttachSide.LEFTMIDDLE ? recruiterCol - 1 : recruiterCol + 1;
                 if (indexInRow < 0) indexInRow = 0;
                 if (indexInRow >= GemSockets[recruiterRow].Count) indexInRow = GemSockets[GemSockets.Count - 1].Count - 1;
-                Vector2 socketPos = GemSockets[recruiterRow][indexInRow].pos;
+                socketPos = GemSockets[recruiterRow][indexInRow].pos;
                 GemSockets[recruiterRow][indexInRow] = new GemSocket(gem, socketPos);
             }
             else
@@ -167,6 +190,7 @@ public class GemManager : MonoBehaviour
                 Debug.LogError("recruiter was not found in gem list");
             }
         }
+        gem.transform.position = socketPos;
         userinterface.UpdateVisuals(this);
     }
 
