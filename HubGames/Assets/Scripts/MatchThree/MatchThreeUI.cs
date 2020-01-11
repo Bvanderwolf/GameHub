@@ -28,7 +28,7 @@ public class MatchThreeUI : MonoBehaviour
         dotHeight = dotPrefab.GetComponent<RectTransform>().rect.height;
     }
 
-    public void UpdateVisual (GemManager manager)
+    public void UpdateVisuals (GemManager manager)
     {
         dots.Clear();
 
@@ -47,10 +47,10 @@ public class MatchThreeUI : MonoBehaviour
             x + startOffset.x, -totalHeightHalf + startOffset.y + ((manager.Rows - 1) * dotHeight) + ((manager.Rows - 1) * DOT_MARGIN));
         };
 
-        for (int row = 0; row < manager.Gems.Count; row++)
+        for (int row = 0; row < manager.GemSockets.Count; row++)
         {
-            bool isEven = manager.Gems[row].Count == manager.MAX_START_GEMS_PER_ROW;
-            for (int col = 0; col < manager.Gems[row].Count; col++)
+            bool isEven = manager.GemSockets[row].Count == manager.MAX_START_GEMS_PER_ROW;
+            for (int col = 0; col < manager.GemSockets[row].Count; col++)
             {
                 GameObject dot = Instantiate(
                     dotPrefab,
@@ -59,7 +59,7 @@ public class MatchThreeUI : MonoBehaviour
                         -(row * dotHeight) - (row * DOT_MARGIN)),
                     Quaternion.identity,
                     transform);
-                dot.GetComponent<RawImage>().texture = manager.Gems[row][col] != null ? greenDot : redDot;
+                dot.GetComponent<RawImage>().texture = manager.GemSockets[row][col].gem != null ? greenDot : redDot;
                 dots.Add(dot);
             }
         }
