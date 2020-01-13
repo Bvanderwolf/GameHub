@@ -24,8 +24,6 @@ public class GemManager : MonoBehaviour
 
     private MatchThreeUI userinterface;
 
-    public enum AttachSide { LEFTBOT, LEFTMIDDLE, LEFTTOP, RIGHTBOT, RIGHTMIDDLE, RIGHTTOP }
-
     public readonly int MIN_CHAIN_COUNT = 3;
 
     public bool IsRootGem (GameObject gem) => GemSockets[0] != null && GemSockets[0].Any((socket) => socket.gem == gem);
@@ -46,21 +44,23 @@ public class GemManager : MonoBehaviour
         gemHalfWidth = gemPrefab.GetComponent<SpriteRenderer>().size.x * gemPrefab.transform.localScale.x;
         gemHalfHeight = gemPrefab.GetComponent<SpriteRenderer>().size.y * gemPrefab.transform.localScale.y;
 
-        float gemYSpawnOffset = Camera.main.orthographicSize - ((gemHalfHeight * rows) * 0.5f);
+        float gemYSpawnOffset = Camera.main.orthographicSize - (gemHalfHeight * rows);
 
         totalWidthHalf = gemHalfWidth * MAX_START_GEMS_PER_ROW * 0.5f;
-        totalHeightHalf = gemHalfHeight * rows * 0.5f;
 
-        /*to center the gems we use negative half of the total width and
-        height as our x and y and to make it appear on top of the screen we offset y*/
+        /*To make the gems start spawning on the left top of the screen we set the y axis start
+         to the camera size minus combined height of gems halfed adding the position for a gem
+         on the top row*/
         Func<bool, Vector2> StartPosition = (_isEvenRow) =>
         {
             float x = _isEvenRow ? -totalWidthHalf : -totalWidthHalf + (gemHalfWidth * 0.5f);
             return new Vector2(
             x + (rows - 1) * GEM_MARGIN,
-            -totalHeightHalf + gemYSpawnOffset + ((rows - 1) * gemHalfHeight) + ((rows - 1) * GEM_MARGIN));
+            gemYSpawnOffset + ((rows - 1) * gemHalfHeight) + ((rows - 1) * GEM_MARGIN));
         };
 
+        //The gems are spawned from the top of the screen going down because gems are added
+        //by player shooting on the bottom.
         for (int row = 0; row < rows; row++)
         {
             GemSockets.Add(new List<GemSocket>());
@@ -79,15 +79,18 @@ public class GemManager : MonoBehaviour
                     transform
                     );
                 GemSockets[row].Add(new GemSocket(gem, gem.transform.position));
+                //added gems get a random gem sprite, are set the be kinematic and then initialized internaly
                 gem.GetComponent<SpriteRenderer>().sprite = GetRandomGemSprite();
                 gem.GetComponent<Rigidbody2D>().isKinematic = true;
                 gem.GetComponent<GemBehaviour>().initialize(this);
             }
         }
+        //the MatchThreeUI class facilitates a view to show the GemSockets so we update it after initialisation
         userinterface = FindObjectOfType<MatchThreeUI>();
         userinterface.UpdateVisuals(this);
     }
 
+    //adds a row to the gemsocket list with all GemSocket Wrappers theirs gameobject reference set to null.
     private void AddNullRowToGemList ()
     {
         GemSockets.Add(new List<GemSocket>());
@@ -105,105 +108,84 @@ public class GemManager : MonoBehaviour
         }
     }
 
-    public void AddGemToList (GameObject gem, GameObject recruiter, AttachSide side)
+    //returns position of gem in the GemSockets list in vector2int form.
+    //returns -1 for axis if not found.
+    private Vector2Int GetPositionInList (GameObject _gem)
     {
         int recruiterRow = -1;
         int recruiterCol = -1;
         for (int row = 0; row < GemSockets.Count; row++)
         {
-            if (GemSockets[row].Any((socket) => socket.gem == recruiter))
+            if (GemSockets[row].Any((socket) => socket.gem == _gem))
             {
                 recruiterRow = row;
                 for (int col = 0; col < GemSockets[row].Count; col++)
                 {
-                    if (GemSockets[row][col].gem == recruiter) recruiterCol = col;
+                    if (GemSockets[row][col].gem == _gem) recruiterCol = col;
                 }
             }
         }
+        return new Vector2Int(recruiterCol, recruiterRow);
+    }
 
+    public void AddGemToList (GameObject gem, GameObject recruiter, int side)
+    {
+        //get position of recruiter in list and return error if not found
+        Vector2Int recruiterPos = GetPositionInList(recruiter);
+        if (recruiterPos.x == -1 || recruiterPos.y == -1)
+        {
+            Debug.LogError("recruiter was not found in gem list");
+            return;
+        }
+
+        //if the recruiter is found we setup the variables necessary for finding a position for recruited gem
         Vector2 socketPos = new Vector2();
-        bool isEvenRow = (recruiterRow + 1) % 2 == 0;
-        int indexInRow = 0;
-        if (side == AttachSide.LEFTTOP || side == AttachSide.RIGHTTOP)
-        {
-            if (recruiterRow == GemSockets.Count - 1)
-                AddNullRowToGemList();
+        bool isEvenRow = (recruiterPos.y + 1) % 2 == 0;
+        int recruitPosX = 0;
+        int recruitPosY = 0;
 
-            if (recruiterRow != -1 && recruiterCol != -1)
-            {
-                if (side == AttachSide.LEFTTOP)
-                {
-                    indexInRow = recruiterCol - 1;
-                    if (!isEvenRow) indexInRow++;
-                }
-                else
-                {
-                    indexInRow = recruiterCol + 1;
-                    if (isEvenRow) indexInRow--;
-                }
-                if (indexInRow < 0) indexInRow = 0;
-                if (indexInRow >= GemSockets[recruiterRow + 1].Count) indexInRow = GemSockets[GemSockets.Count - 1].Count - 1;
-                socketPos = GemSockets[recruiterRow + 1][indexInRow].pos;
-                GemSockets[recruiterRow + 1][indexInRow] = new GemSocket(gem, socketPos);
-            }
-            else
-            {
-                Debug.LogError("recruiter was not found in gem list");
-            }
-        }
-        else if (side == AttachSide.LEFTBOT || side == AttachSide.RIGHTBOT)
+        /*if the recruited gem was recruited on top of a recruiter and this recruiter was
+         on the top row of the GemSockets list we add a new row to it so it can fit*/
+        if (Attaching.TOP(side) && recruiterPos.y == GemSockets.Count - 1)
         {
-            if (recruiterRow != -1 && recruiterCol != -1)
+            AddNullRowToGemList();
+        }
+
+        /*If a gem is recruited on the top or bottom of a recruiter we need to check
+         left vs right, top vs bottom and then if recruited row as an even row. Based on
+         these variables we change the recruit position of the gem. If the gem was recruited
+         by attaching in the middle we can just check left vs right and set the
+         recruit y pos to the recruit y position. */
+        if (!Attaching.MIDDLE(side))
+        {
+            if (Attaching.LEFT(side))
             {
-                if (side == AttachSide.LEFTBOT)
-                {
-                    indexInRow = recruiterCol - 1;
-                    if (!isEvenRow) indexInRow++;
-                }
-                else
-                {
-                    indexInRow = recruiterCol + 1;
-                    if (isEvenRow) indexInRow--;
-                }
-                if (indexInRow < 0) indexInRow = 0;
-                if (indexInRow >= GemSockets[recruiterRow - 1].Count) indexInRow = GemSockets[GemSockets.Count - 1].Count - 1;
-                socketPos = GemSockets[recruiterRow - 1][indexInRow].pos;
-                GemSockets[recruiterRow - 1][indexInRow] = new GemSocket(gem, socketPos);
+                recruitPosX = recruiterPos.x - 1;
+                recruitPosY = Attaching.TOP(side) ? recruiterPos.y + 1 : recruiterPos.y - 1;
+                if (!isEvenRow) recruitPosX++;
             }
-            else
+            else if (Attaching.RIGHT(side))
             {
-                Debug.LogError("recruiter was not found in gem list");
+                recruitPosX = recruiterPos.x + 1;
+                recruitPosY = Attaching.TOP(side) ? recruiterPos.y + 1 : recruiterPos.y - 1;
+                if (isEvenRow) recruitPosX--;
             }
         }
         else
         {
-            if (recruiterRow != -1 && recruiterCol != -1)
-            {
-                indexInRow = side == AttachSide.LEFTMIDDLE ? recruiterCol - 1 : recruiterCol + 1;
-                if (indexInRow < 0) indexInRow = 0;
-                if (indexInRow >= GemSockets[recruiterRow].Count) indexInRow = GemSockets[GemSockets.Count - 1].Count - 1;
-                socketPos = GemSockets[recruiterRow][indexInRow].pos;
-                GemSockets[recruiterRow][indexInRow] = new GemSocket(gem, socketPos);
-            }
-            else
-            {
-                Debug.LogError("recruiter was not found in gem list");
-            }
+            recruitPosX = side == Attaching.LEFTMIDDLE ? recruiterPos.x - 1 : recruiterPos.x + 1;
+            recruitPosY = recruiterPos.y;
         }
-        gem.transform.position = socketPos;
-        userinterface.UpdateVisuals(this);
-    }
 
-    [ContextMenu("test")]
-    public void Test ()
-    {
-        foreach (List<GemSocket> list in GemSockets)
-        {
-            foreach (GemSocket s in list)
-            {
-                Debug.Log(s.gem);
-            }
-        }
+        //we make sure the recruitPos is not out of bounds *Problem: exceptions override other gems which isnt intended
+        if (recruitPosX < 0) recruitPosX = 0;
+        if (recruitPosX >= GemSockets[recruitPosY].Count) recruitPosX = GemSockets[recruitPosY].Count - 1;
+        socketPos = GemSockets[recruitPosY][recruitPosX].pos;
+        GemSockets[recruitPosY][recruitPosX] = new GemSocket(gem, socketPos);
+        gem.transform.position = socketPos;
+        //after updating the gemsockets list we update the visuals on the canvas as well
+        userinterface.UpdateVisuals(this);
+        //Debug.Log($"recruitPos: {recruiterPos}\n recruitPosX: {recruitPosX}\n recruitPosY: {recruitPosY}\n side: {side}");
     }
 
     public void RecruitGem (GameObject gem, GameObject recruiter)
@@ -213,50 +195,71 @@ public class GemManager : MonoBehaviour
 
         if (dotHorizontal <= 0)
         {
-            if (dotVertical < -0.2f)
+            if (dotVertical < -Attaching.MIDDLE_ATTACH_RANGE)
             {
                 gem.transform.position = recruiter.transform.position + new Vector3(
                (gemHalfWidth * 0.5f) + GEM_MARGIN,
                gemHalfHeight + GEM_MARGIN);
-                AddGemToList(gem, recruiter, AttachSide.RIGHTBOT);
+                AddGemToList(gem, recruiter, Attaching.RIGHTBOT);
             }
-            else if (dotVertical > 0.2f)
+            else if (dotVertical > Attaching.MIDDLE_ATTACH_RANGE)
             {
                 gem.transform.position = recruiter.transform.position + new Vector3(
                 (gemHalfWidth * 0.5f) + GEM_MARGIN,
                 -(gemHalfHeight + GEM_MARGIN));
-                AddGemToList(gem, recruiter, AttachSide.RIGHTTOP);
+                AddGemToList(gem, recruiter, Attaching.RIGHTTOP);
             }
             else
             {
                 gem.transform.position = recruiter.transform.position + new Vector3(
                gemHalfWidth + GEM_MARGIN, 0);
-                AddGemToList(gem, recruiter, AttachSide.RIGHTMIDDLE);
+                AddGemToList(gem, recruiter, Attaching.RIGHTMIDDLE);
             }
         }
         else
         {
-            if (dotVertical < -0.2f)
+            if (dotVertical < -Attaching.MIDDLE_ATTACH_RANGE)
             {
                 gem.transform.position = recruiter.transform.position + new Vector3(
                 -((gemHalfWidth * 0.5f) + GEM_MARGIN),
                 gemHalfHeight + GEM_MARGIN);
-                AddGemToList(gem, recruiter, AttachSide.LEFTBOT);
+                AddGemToList(gem, recruiter, Attaching.LEFTBOT);
             }
-            else if (dotVertical > 0.2f)
+            else if (dotVertical > Attaching.MIDDLE_ATTACH_RANGE)
             {
                 gem.transform.position = recruiter.transform.position + new Vector3(
                 -((gemHalfWidth * 0.5f) + GEM_MARGIN),
                 -(gemHalfHeight + GEM_MARGIN));
-                AddGemToList(gem, recruiter, AttachSide.LEFTTOP);
+                AddGemToList(gem, recruiter, Attaching.LEFTTOP);
             }
             else
             {
                 gem.transform.position = recruiter.transform.position + new Vector3(
                 -(gemHalfWidth + GEM_MARGIN), 0);
-                AddGemToList(gem, recruiter, AttachSide.LEFTMIDDLE);
+                AddGemToList(gem, recruiter, Attaching.LEFTMIDDLE);
             }
         }
+    }
+
+    private class Attaching
+    {
+        public static int LEFTTOP = 1;
+        public static int LEFTMIDDLE = 2;
+        public static int LEFTBOT = 3;
+        public static int RIGHTTOP = 4;
+        public static int RIGHTMIDDLE = 5;
+        public static int RIGHTBOT = 6;
+        public static float MIDDLE_ATTACH_RANGE = 0.3f;
+
+        public static bool TOP (int _side) => _side == LEFTTOP || _side == RIGHTTOP;
+
+        public static bool BOT (int _side) => _side == LEFTBOT || _side == RIGHTBOT;
+
+        public static bool MIDDLE (int _side) => _side == LEFTMIDDLE || _side == RIGHTMIDDLE;
+
+        public static bool LEFT (int _side) => _side == LEFTMIDDLE || _side == LEFTTOP || _side == LEFTBOT;
+
+        public static bool RIGHT (int _side) => _side == RIGHTMIDDLE || _side == RIGHTTOP || _side == RIGHTBOT;
     }
 
     public static Sprite GetRandomGemSprite ()
