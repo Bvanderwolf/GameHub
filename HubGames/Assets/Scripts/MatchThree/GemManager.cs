@@ -24,7 +24,7 @@ public class GemManager : MonoBehaviour
 
     private MatchThreeUI userinterface;
 
-    public readonly int MIN_CHAIN_COUNT = 3;
+    public readonly int MIN_EXPLODE_COUNT = 3;
 
     public bool IsRootGem (GameObject gem) => GemSockets[0] != null && GemSockets[0].Any((socket) => socket.gem == gem);
 
@@ -82,7 +82,7 @@ public class GemManager : MonoBehaviour
                 //added gems get a random gem sprite, are set the be kinematic and then initialized internaly
                 gem.GetComponent<SpriteRenderer>().sprite = GetRandomGemSprite();
                 gem.GetComponent<Rigidbody2D>().isKinematic = true;
-                gem.GetComponent<GemBehaviour>().initialize(this);
+                gem.GetComponent<GemBehaviour>().initialize(this, new Vector2Int(col, row));
             }
         }
         //the MatchThreeUI class facilitates a view to show the GemSockets so we update it after initialisation
@@ -128,14 +128,14 @@ public class GemManager : MonoBehaviour
         return new Vector2Int(recruiterCol, recruiterRow);
     }
 
-    public void AddGemToList (GameObject gem, GameObject recruiter, int side)
+    public Vector2Int AddGemToList (GameObject gem, GameObject recruiter, int side)
     {
         //get position of recruiter in list and return error if not found
         Vector2Int recruiterPos = GetPositionInList(recruiter);
         if (recruiterPos.x == -1 || recruiterPos.y == -1)
         {
             Debug.LogError("recruiter was not found in gem list");
-            return;
+            return new Vector2Int();
         }
 
         //if the recruiter is found we setup the variables necessary for finding a position for recruited gem
@@ -183,13 +183,15 @@ public class GemManager : MonoBehaviour
         socketPos = GemSockets[recruitPosY][recruitPosX].pos;
         GemSockets[recruitPosY][recruitPosX] = new GemSocket(gem, socketPos);
         gem.transform.position = socketPos;
-        //after updating the gemsockets list we update the visuals on the canvas as well
-        userinterface.UpdateVisuals(this);
-        //Debug.Log($"recruitPos: {recruiterPos}\n recruitPosX: {recruitPosX}\n recruitPosY: {recruitPosY}\n side: {side}");
+
+        Debug.Log($"recruitPos: {recruiterPos}\n recruitPosX: {recruitPosX}\n recruitPosY: {recruitPosY}\n side: {side}");
+        return new Vector2Int(recruitPosX, recruitPosY);
     }
 
-    public void RecruitGem (GameObject gem, GameObject recruiter)
+    public Vector2Int RecruitGem (GameObject gem, GameObject recruiter)
     {
+        gem.GetComponent<GemBehaviour>().OnTriedExploding += OnGemExplosion;
+
         float dotHorizontal = Vector2.Dot(recruiter.transform.position - gem.transform.position, recruiter.transform.right);
         float dotVertical = Vector2.Dot(recruiter.transform.position - gem.transform.position, Vector2.up);
 
@@ -197,46 +199,30 @@ public class GemManager : MonoBehaviour
         {
             if (dotVertical < -Attaching.MIDDLE_ATTACH_RANGE)
             {
-                gem.transform.position = recruiter.transform.position + new Vector3(
-               (gemHalfWidth * 0.5f) + GEM_MARGIN,
-               gemHalfHeight + GEM_MARGIN);
-                AddGemToList(gem, recruiter, Attaching.RIGHTBOT);
+                return AddGemToList(gem, recruiter, Attaching.RIGHTBOT);
             }
             else if (dotVertical > Attaching.MIDDLE_ATTACH_RANGE)
             {
-                gem.transform.position = recruiter.transform.position + new Vector3(
-                (gemHalfWidth * 0.5f) + GEM_MARGIN,
-                -(gemHalfHeight + GEM_MARGIN));
-                AddGemToList(gem, recruiter, Attaching.RIGHTTOP);
+                return AddGemToList(gem, recruiter, Attaching.RIGHTTOP);
             }
             else
             {
-                gem.transform.position = recruiter.transform.position + new Vector3(
-               gemHalfWidth + GEM_MARGIN, 0);
-                AddGemToList(gem, recruiter, Attaching.RIGHTMIDDLE);
+                return AddGemToList(gem, recruiter, Attaching.RIGHTMIDDLE);
             }
         }
         else
         {
             if (dotVertical < -Attaching.MIDDLE_ATTACH_RANGE)
             {
-                gem.transform.position = recruiter.transform.position + new Vector3(
-                -((gemHalfWidth * 0.5f) + GEM_MARGIN),
-                gemHalfHeight + GEM_MARGIN);
-                AddGemToList(gem, recruiter, Attaching.LEFTBOT);
+                return AddGemToList(gem, recruiter, Attaching.LEFTBOT);
             }
             else if (dotVertical > Attaching.MIDDLE_ATTACH_RANGE)
             {
-                gem.transform.position = recruiter.transform.position + new Vector3(
-                -((gemHalfWidth * 0.5f) + GEM_MARGIN),
-                -(gemHalfHeight + GEM_MARGIN));
-                AddGemToList(gem, recruiter, Attaching.LEFTTOP);
+                return AddGemToList(gem, recruiter, Attaching.LEFTTOP);
             }
             else
             {
-                gem.transform.position = recruiter.transform.position + new Vector3(
-                -(gemHalfWidth + GEM_MARGIN), 0);
-                AddGemToList(gem, recruiter, Attaching.LEFTMIDDLE);
+                return AddGemToList(gem, recruiter, Attaching.LEFTMIDDLE);
             }
         }
     }
@@ -267,6 +253,41 @@ public class GemManager : MonoBehaviour
         return gemSpriteDict[gemNames[Random.Range(0, gemNames.Length)]];
     }
 
+    public List<Vector2Int> GetPositionsOfGemsWithSprite (Sprite _sprite)
+    {
+        List<Vector2Int> positions = new List<Vector2Int>();
+        for (int row = 0; row < GemSockets.Count; row++)
+        {
+            for (int col = 0; col < GemSockets[row].Count; col++)
+            {
+                if (GemSockets[row][col].gem != null
+                    && GemSockets[row][col].gem.GetComponent<SpriteRenderer>().sprite == _sprite)
+                    positions.Add(new Vector2Int(col, row));
+            }
+        }
+        return positions;
+    }
+
+    public GameObject GetGem (Vector2Int position)
+    {
+        if (position.y >= 0 && position.y < GemSockets.Count
+        && position.x >= 0 && position.x < GemSockets[position.y].Count)
+        {
+            return GemSockets[position.y][position.x].gem;
+        }
+        else return null;
+    }
+
+    public bool IsNeighbour (Vector2Int a, Vector2Int b, bool isEvenRow)
+    {
+        return (a.x == b.x && a.y - 1 == b.y)
+            || (a.x == b.x && a.y + 1 == b.y)
+            || (a.x + 1 == b.x && a.y == b.y)
+            || (a.x - 1 == b.x && a.y == b.y)
+            || (isEvenRow && ((a.x - 1 == b.x && a.y - 1 == b.y) || (a.x + 1 == b.x && a.y + 1 == b.y)))
+            || (!isEvenRow && ((a.x + 1 == b.x && a.y - 1 == b.y) || (a.x + 1 == b.x && a.y + 1 == b.y)));
+    }
+
     public struct GemSocket
     {
         public GameObject gem;
@@ -277,5 +298,46 @@ public class GemManager : MonoBehaviour
             gem = _gem;
             pos = _pos;
         }
+    }
+
+    private void OnGemExplosion ()
+    {
+        int explodeCount = 0;
+        foreach (List<GemSocket> list in GemSockets)
+        {
+            explodeCount += list.Count((socket) =>
+            {
+                GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
+                return behaviour != null && behaviour.Explodable;
+            });
+        }
+
+        if (explodeCount >= MIN_EXPLODE_COUNT)
+        {
+            foreach (List<GemSocket> list in GemSockets)
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    GemBehaviour behaviour = list[i].gem?.GetComponent<GemBehaviour>();
+                    if (behaviour != null && behaviour.Explodable)
+                    {
+                        Destroy(list[i].gem);
+                        Vector2 pos = list[i].pos;
+                        list[i] = new GemSocket(null, pos);
+                    }
+                }
+            }
+        }
+        else
+        {
+            GemSockets.ForEach((list) => list.ForEach((socket) =>
+            {
+                GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
+                if (behaviour != null && behaviour.Explodable) behaviour.Explodable = false;
+            }));
+        }
+
+        //after updating the gemsockets list we update the visuals on the canvas as well
+        userinterface.UpdateVisuals(this);
     }
 }
