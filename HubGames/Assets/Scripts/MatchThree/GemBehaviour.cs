@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 using System;
 
 public class GemBehaviour : MonoBehaviour
@@ -10,7 +9,7 @@ public class GemBehaviour : MonoBehaviour
     [SerializeField] private Vector2Int positionInList;
 
     public bool Explodable = false;
-    public bool isRoot;
+
     public Vector2Int PositionInList => positionInList;
 
     public event Action OnTriedExploding;
@@ -23,7 +22,6 @@ public class GemBehaviour : MonoBehaviour
     public void initialize (GemManager _manager, Vector2Int _position)
     {
         manager = _manager;
-        isRoot = manager.IsRootGem(this.gameObject);
         positionInList = _position;
     }
 
@@ -62,7 +60,7 @@ public class GemBehaviour : MonoBehaviour
 
         positions.ForEach((pos) =>
         {
-            if (manager.IsNeighbour(positionInList, pos, (positionInList.y + 1) % 2 == 0))
+            if (manager.IsNeighbour(positionInList, pos))
             {
                 GemBehaviour behaviour = manager.GetGem(pos)?.GetComponent<GemBehaviour>();
                 if (behaviour != null && !behaviour.Explodable)

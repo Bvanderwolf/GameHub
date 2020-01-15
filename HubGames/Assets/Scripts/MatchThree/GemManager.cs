@@ -260,8 +260,8 @@ public class GemManager : MonoBehaviour
         {
             for (int col = 0; col < GemSockets[row].Count; col++)
             {
-                if (GemSockets[row][col].gem != null
-                    && GemSockets[row][col].gem.GetComponent<SpriteRenderer>().sprite == _sprite)
+                if (GemSockets[row][col].gem != null &&
+                    GemSockets[row][col].gem.GetComponent<SpriteRenderer>().sprite == _sprite)
                     positions.Add(new Vector2Int(col, row));
             }
         }
@@ -278,8 +278,41 @@ public class GemManager : MonoBehaviour
         else return null;
     }
 
-    public bool IsNeighbour (Vector2Int a, Vector2Int b, bool isEvenRow)
+    public List<GameObject> GetGemsInRow (int row)
     {
+        List<GameObject> gems = new List<GameObject>();
+        if (row > 0 && row < GemSockets.Count)
+        {
+            foreach (GemSocket s in GemSockets[row])
+            {
+                if (s.gem != null) gems.Add(s.gem);
+            }
+        }
+        return gems;
+    }
+
+    public List<GameObject> GetGemsInCollum (int col)
+    {
+        List<GameObject> gems = new List<GameObject>();
+        bool lastCol = col == MAX_START_GEMS_PER_ROW - 1;
+        if (col >= 0 && col < MAX_START_GEMS_PER_ROW)
+        {
+            for (int row = 0; row < GemSockets.Count; row++)
+            {
+                int _col;
+
+                if (lastCol) _col = (row + 1) % 2 == 0 ? MAX_START_GEMS_PER_ROW - 1 : MAX_START_GEMS_PER_ROW - 2;
+                else _col = col;
+
+                gems.Add(GemSockets[row][_col].gem);
+            }
+        }
+        return gems;
+    }
+
+    public bool IsNeighbour (Vector2Int a, Vector2Int b)
+    {
+        bool isEvenRow = (a.y + 1) % 2 == 0;
         return (a.x == b.x && a.y - 1 == b.y)
             || (a.x == b.x && a.y + 1 == b.y)
             || (a.x + 1 == b.x && a.y == b.y)
@@ -302,6 +335,7 @@ public class GemManager : MonoBehaviour
 
     private void OnGemExplosion ()
     {
+        //check for explodable gems
         int explodeCount = 0;
         foreach (List<GemSocket> list in GemSockets)
         {
@@ -312,6 +346,7 @@ public class GemManager : MonoBehaviour
             });
         }
 
+        //if explodable gems is greater or equal to minimal ammount we destroy them
         if (explodeCount >= MIN_EXPLODE_COUNT)
         {
             foreach (List<GemSocket> list in GemSockets)
@@ -327,9 +362,12 @@ public class GemManager : MonoBehaviour
                     }
                 }
             }
+            //after destroying explodable gems we check for gems that aren't attached to the root
+            CutGemsNotAttachedToRoot();
         }
         else
         {
+            //if the ammount of gems wasn't enough for destruction we reset their values
             GemSockets.ForEach((list) => list.ForEach((socket) =>
             {
                 GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
@@ -339,5 +377,11 @@ public class GemManager : MonoBehaviour
 
         //after updating the gemsockets list we update the visuals on the canvas as well
         userinterface.UpdateVisuals(this);
+    }
+
+    private void CutGemsNotAttachedToRoot ()
+    {
+        List<GameObject> gems = GetGemsInCollum(MAX_START_GEMS_PER_ROW - 1);
+        //check of er een of meerdere gems die null zijn tussen 2 gems zit
     }
 }
