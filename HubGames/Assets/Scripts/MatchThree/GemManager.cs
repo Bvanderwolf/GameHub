@@ -22,8 +22,6 @@ public class GemManager : MonoBehaviour
     private float totalWidthHalf;
     private float totalHeightHalf;
 
-    private MatchThreeUI userinterface;
-
     public readonly int MIN_EXPLODE_COUNT = 3;
     private readonly float MIDDLE_ATTACH_RANGE = 0.3f;
 
@@ -86,9 +84,6 @@ public class GemManager : MonoBehaviour
                 gem.GetComponent<GemBehaviour>().initialize(this, new Vector2Int(col, row));
             }
         }
-        //the MatchThreeUI class facilitates a view to show the GemSockets so we update it after initialisation
-        userinterface = FindObjectOfType<MatchThreeUI>();
-        userinterface.UpdateVisuals(this);
     }
 
     //adds a row to the gemsocket list with all GemSocket Wrappers theirs gameobject reference set to null.
@@ -191,8 +186,6 @@ public class GemManager : MonoBehaviour
 
     public Vector2Int RecruitGem (GameObject gem, GameObject recruiter)
     {
-        gem.GetComponent<GemBehaviour>().OnTriedExploding += OnGemExplosion;
-
         float dotHorizontal = Vector2.Dot(recruiter.transform.position - gem.transform.position, recruiter.transform.right);
         float dotVertical = Vector2.Dot(recruiter.transform.position - gem.transform.position, Vector2.up);
 
@@ -251,182 +244,5 @@ public class GemManager : MonoBehaviour
     public static Sprite GetRandomGemSprite ()
     {
         return gemSpriteDict[gemNames[Random.Range(0, gemNames.Length)]];
-    }
-
-    public List<Vector2Int> GetPositionsOfGemsWithSprite (Sprite _sprite)
-    {
-        List<Vector2Int> positions = new List<Vector2Int>();
-        for (int row = 0; row < GemSockets.Count; row++)
-        {
-            for (int col = 0; col < GemSockets[row].Count; col++)
-            {
-                if (GemSockets[row][col].gem != null &&
-                    GemSockets[row][col].gem.GetComponent<SpriteRenderer>().sprite == _sprite)
-                    positions.Add(new Vector2Int(col, row));
-            }
-        }
-        return positions;
-    }
-
-    public GameObject GetGem (Vector2Int position)
-    {
-        if (position.y >= 0 && position.y < GemSockets.Count
-        && position.x >= 0 && position.x < GemSockets[position.y].Count)
-        {
-            return GemSockets[position.y][position.x].gem;
-        }
-        else return null;
-    }
-
-    public List<GameObject> GetGemsInRow (int row)
-    {
-        List<GameObject> gems = new List<GameObject>();
-        if (row > 0 && row < GemSockets.Count)
-        {
-            foreach (GemSocket s in GemSockets[row])
-            {
-                if (s.gem != null) gems.Add(s.gem);
-            }
-        }
-        return gems;
-    }
-
-    private List<Vector2Int> GetPositionsOfEmptySockets ()
-    {
-        List<Vector2Int> positions = new List<Vector2Int>();
-        for (int row = 0; row < GemSockets.Count; row++)
-        {
-            for (int col = 0; col < GemSockets[row].Count; col++)
-            {
-                if (GemSockets[row][col].gem == null) positions.Add(new Vector2Int(col, row));
-            }
-        }
-        return positions;
-    }
-
-    public List<Vector2Int> GetPositionsOfNeighbours (Vector2Int pos)
-    {
-        List<Vector2Int> positions = new List<Vector2Int>();
-        for (int row = 0; row < GemSockets.Count; row++)
-        {
-            for (int col = 0; col < GemSockets[row].Count; col++)
-            {
-                GemBehaviour behaviour = GemSockets[row][col].gem?.GetComponent<GemBehaviour>();
-                if (behaviour != null && pos != behaviour.PositionInList && IsNeighbour(pos, behaviour.PositionInList))
-                    positions.Add(new Vector2Int(col, row));
-            }
-        }
-        return positions;
-    }
-
-    public bool IsNeighbour (Vector2Int a, Vector2Int b)
-    {
-        bool isEvenRow = (a.y + 1) % 2 == 0;
-        return (a.x == b.x && a.y - 1 == b.y)
-            || (a.x == b.x && a.y + 1 == b.y)
-            || (a.x + 1 == b.x && a.y == b.y)
-            || (a.x - 1 == b.x && a.y == b.y)
-            || (isEvenRow && ((a.x - 1 == b.x && a.y - 1 == b.y) || (a.x + 1 == b.x && a.y + 1 == b.y)))
-            || (!isEvenRow && ((a.x + 1 == b.x && a.y - 1 == b.y) || (a.x + 1 == b.x && a.y + 1 == b.y)));
-    }
-
-    public struct GemSocket
-    {
-        public GameObject gem;
-        public Vector2 pos;
-
-        public GemSocket (GameObject _gem, Vector2 _pos)
-        {
-            gem = _gem;
-            pos = _pos;
-        }
-    }
-
-    private void OnGemExplosion ()
-    {
-        //check for explodable gems
-        int explodeCount = 0;
-        foreach (List<GemSocket> list in GemSockets)
-        {
-            explodeCount += list.Count((socket) =>
-            {
-                GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
-                return behaviour != null && behaviour.Explodable;
-            });
-        }
-
-        //if explodable gems is greater or equal to minimal ammount we destroy them
-        if (explodeCount >= MIN_EXPLODE_COUNT)
-        {
-            foreach (List<GemSocket> list in GemSockets)
-            {
-                for (int i = 0; i < list.Count; i++)
-                {
-                    GemBehaviour behaviour = list[i].gem?.GetComponent<GemBehaviour>();
-                    if (behaviour != null && behaviour.Explodable)
-                    {
-                        Destroy(list[i].gem);
-                        Vector2 pos = list[i].pos;
-                        list[i] = new GemSocket(null, pos);
-                    }
-                }
-            }
-            //after destroying explodable gems we check for gems that aren't attached to the root
-            CutGemsNotAttachedToRoot();
-        }
-        else
-        {
-            //if the ammount of gems wasn't enough for destruction we reset their values
-            GemSockets.ForEach((list) => list.ForEach((socket) =>
-            {
-                GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
-                if (behaviour != null && behaviour.Explodable) behaviour.Explodable = false;
-            }));
-        }
-
-        //after updating the gemsockets list we update the visuals on the canvas as well
-        userinterface.UpdateVisuals(this);
-    }
-
-    private void CutGemsNotAttachedToRoot ()
-    {
-        List<Vector2Int> emptySocketPositions = GetPositionsOfEmptySockets();
-        List<Vector2Int> minimums = new List<Vector2Int>();
-
-        for (int col = 0; col < MAX_START_GEMS_PER_ROW; col++)
-        {
-            List<Vector2Int> colPos = emptySocketPositions.FindAll((v) => v.x == col);
-            int minimum = colPos.Count != 0 ? colPos.Min((v) => v.y) : GemSockets.Count - 1;
-            minimums.Add(new Vector2Int(col, minimum));
-        }
-
-        foreach (List<GemSocket> list in GemSockets)
-        {
-            for (int i = 0; i < list.Count; i++)
-            {
-                GemBehaviour behaviour = list[i].gem?.GetComponent<GemBehaviour>();
-                if (behaviour != null)
-                {
-                    Vector2Int pos = behaviour.PositionInList;
-                    Vector2Int minimum = minimums.Find((v) => v.x == pos.x);
-                    bool isEvenRow = (pos.y + 1) % 2 == 0;
-                    if (pos.y > minimum.y)
-                    {
-                        if (!behaviour.FindRoot())
-                        {
-                            Destroy(list[i].gem);
-                            Vector2 socketPos = list[i].pos;
-                            list[i] = new GemSocket(null, socketPos);
-                        }
-                    }
-                }
-            }
-        }
-
-        GemSockets.ForEach((list) => list.ForEach((socket) =>
-        {
-            GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
-            if (behaviour != null && behaviour.Rooting) behaviour.Rooting = false;
-        }));
     }
 }

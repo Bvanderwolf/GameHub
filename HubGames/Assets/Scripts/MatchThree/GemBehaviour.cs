@@ -2,6 +2,7 @@
 using UnityEngine;
 using System;
 using System.Linq;
+using System.Collections;
 
 public class GemBehaviour : MonoBehaviour
 {
@@ -9,12 +10,10 @@ public class GemBehaviour : MonoBehaviour
     private SpriteRenderer spriteRend;
     [SerializeField] private Vector2Int positionInList;
 
-    public bool Explodable = false;
-    public bool Rooting = false;
-
     public Vector2Int PositionInList => positionInList;
 
-    public event Action OnTriedExploding;
+    private readonly float explodeDelay = 0.1f;
+    private readonly float fadeSpeed = 1.5f;
 
     private void Awake ()
     {
@@ -48,46 +47,29 @@ public class GemBehaviour : MonoBehaviour
                 body.isKinematic = true;
 
                 collision.gameObject.GetComponent<GemBehaviour>().Recruit(this.gameObject);
-
-                TryExplosion();
-                OnTriedExploding();
             }
         }
     }
 
-    public bool FindRoot ()
+    public void RemoveSelf (int positionInExplodingGems)
     {
-        Rooting = true;
-        if (positionInList.y == 0) return true;
-
-        List<Vector2Int> neighbourPositions = manager.GetPositionsOfNeighbours(positionInList);
-        if (neighbourPositions.Count != 0)
-        {
-            if (neighbourPositions.TrueForAll((v) => manager.GetGem(v).GetComponent<GemBehaviour>().Rooting))
-                return false;
-
-            int min = neighbourPositions.Min((v) => v.y);
-            return manager.GetGem(neighbourPositions.Find((v) => v.y == min)).GetComponent<GemBehaviour>().FindRoot();
-        }
-        else return false;
+        StartCoroutine(FadeToDestroy(positionInExplodingGems * explodeDelay));
     }
 
-    private void TryExplosion ()
+    private IEnumerator FadeToDestroy (float delay)
     {
-        Explodable = true;
-        List<Vector2Int> positions = manager.GetPositionsOfGemsWithSprite(spriteRend.sprite);
+        yield return new WaitForSeconds(delay);
 
-        positions.ForEach((pos) =>
+        float currentLerpTime = 0;
+        while (currentLerpTime != 1)
         {
-            if (manager.IsNeighbour(positionInList, pos))
-            {
-                GemBehaviour behaviour = manager.GetGem(pos)?.GetComponent<GemBehaviour>();
-                if (behaviour != null && !behaviour.Explodable)
-                {
-                    //Debug.Log($"found {behaviour} @ {pos} from {positionInList}");
-                    behaviour.TryExplosion();
-                }
-            }
-        });
+            currentLerpTime += Time.deltaTime * fadeSpeed;
+            if (currentLerpTime > 1) currentLerpTime = 1;
+
+            float lerpedAlpha = 1 + (currentLerpTime * (0 - 1));
+            spriteRend.color = new Color(1, 1, 1, lerpedAlpha);
+            yield return null;
+        }
+        Destroy(this.gameObject);
     }
 }
