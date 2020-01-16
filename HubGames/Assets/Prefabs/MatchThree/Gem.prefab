@@ -119,7 +119,7 @@ CircleCollider2D:
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
-  m_Radius: 2.6
+  m_Radius: 1.65
 --- !u!114 &2750319218384314348
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -133,5 +133,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   positionInList: {x: 0, y: 0}
-  Explodable: 0
-  Rooting: 0
+  exploded: 0

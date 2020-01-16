@@ -79,6 +79,7 @@
     <Compile Include="Assets\Scripts\MatchThree\GemSocket.cs" />
     <Compile Include="Assets\Scripts\MatchThree\MatchThreeGameState.cs" />
     <Compile Include="Assets\Scripts\MatchThree\MatchThreePlayerController.cs" />
+    <Compile Include="Assets\Scripts\MatchThree\RelativePositions.cs" />
     <Compile Include="Assets\Scripts\Snake\SnakeController.cs" />
     <Compile Include="Assets\Scripts\Snake\SnakeGameState.cs" />
     <Compile Include="Assets\Scripts\Snake\SnakeGrid.cs" />

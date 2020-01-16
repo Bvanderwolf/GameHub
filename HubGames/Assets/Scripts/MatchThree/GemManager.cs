@@ -29,6 +29,8 @@ public class GemManager : MonoBehaviour
 
     public List<List<GemSocket>> GemSockets { get; } = new List<List<GemSocket>>();
 
+    private bool explodingGems = false;
+
     private void Awake ()
     {
         gemSpriteDict.Add(gemNames[0], ResourceManager.GetResource<Sprite>("gemBlue"));
@@ -80,9 +82,77 @@ public class GemManager : MonoBehaviour
                 GemSockets[row].Add(new GemSocket(gem, gem.transform.position));
                 //added gems get a random gem sprite, are set the be kinematic and then initialized internaly
                 gem.GetComponent<SpriteRenderer>().sprite = GetRandomGemSprite();
-                gem.GetComponent<Rigidbody2D>().isKinematic = true;
-                gem.GetComponent<GemBehaviour>().initialize(this, new Vector2Int(col, row));
+                GemBehaviour behaviour = gem.GetComponent<GemBehaviour>();
+                behaviour.initializeWithManager(this, new Vector2Int(col, row));
+                behaviour.SetDefaultPhysicsValues();
             }
+        }
+    }
+
+    private void FixedUpdate ()
+    {
+        //if there are gems exploding (defined by "explodingGems") we observe the gemsocket list
+        if (explodingGems) ObserveExplodingGems();
+    }
+
+    private void StartObservingExplodingGems ()
+    {
+        explodingGems = true;
+    }
+
+    //looks at all gems in sockets and checks if all gems that are exploding are finished or not
+    private void ObserveExplodingGems ()
+    {
+        //define whether there are still gems left that are exploding but haven't exploded fully
+        bool anyGemsAreExploding = GemSockets.Any((list) => list.Any((socket) =>
+        {
+            GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
+            return behaviour != null && behaviour.exploding && !behaviour.exploded;
+        }));
+
+        //if there are no gems left that are exploding but not fully we can count them and see if they can be removed
+        if (!anyGemsAreExploding)
+        {
+            //add all exploded gems toghether
+            int explodeCount = 0;
+            foreach (List<GemSocket> list in GemSockets)
+            {
+                explodeCount += list.Count((socket) =>
+                {
+                    GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
+                    return behaviour != null && behaviour.exploded;
+                });
+            }
+
+            //if the explodeCount is high enough we can remove the gems that have exploded
+            if (explodeCount >= MIN_EXPLODE_COUNT)
+            {
+                foreach (List<GemSocket> list in GemSockets)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        GemBehaviour behaviour = list[i].gem?.GetComponent<GemBehaviour>();
+                        if (behaviour != null && behaviour.exploded)
+                        {
+                            behaviour.RemoveSelf(explodeCount);
+                            list[i] = new GemSocket(null, behaviour.transform.position);
+                            explodeCount--;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                //if the ammount of gems wasn't enough for destruction we reset their "exploded" value
+                GemSockets.ForEach((list) => list.ForEach((socket) =>
+                {
+                    GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
+                    if (behaviour != null && behaviour.exploded) behaviour.exploded = false;
+                }));
+            }
+
+            //we stop observing gems by setting "explodingGems" to false
+            explodingGems = false;
         }
     }
 
@@ -95,7 +165,7 @@ public class GemManager : MonoBehaviour
         Func<int, float> x = (row) =>
         {
             return isEven ? -totalWidthHalf + (row * gemHalfWidth) + (row * GEM_MARGIN)
-             : -totalWidthHalf + (gemHalfWidth * 0.5f) + (row * gemHalfWidth) + (row * GEM_MARGIN);
+             : -totalWidthHalf + (gemHalfWidth * 0.65f) + (row * gemHalfWidth) + (row * GEM_MARGIN);
         };
         float y = GemSockets[GemSockets.Count - 2][0].pos.y - gemHalfWidth - GEM_MARGIN;
         for (int row = 0; row < rows; row++)
@@ -176,16 +246,23 @@ public class GemManager : MonoBehaviour
         //we make sure the recruitPos is not out of bounds *Problem: exceptions override other gems which isnt intended
         if (recruitPosX < 0) recruitPosX = 0;
         if (recruitPosX >= GemSockets[recruitPosY].Count) recruitPosX = GemSockets[recruitPosY].Count - 1;
+
+        //set position of gem to a socketposition, set parent to this transform and start observing for exploding gems
         socketPos = GemSockets[recruitPosY][recruitPosX].pos;
         GemSockets[recruitPosY][recruitPosX] = new GemSocket(gem, socketPos);
         gem.transform.position = socketPos;
+        gem.transform.parent = transform;
+        StartObservingExplodingGems();
 
         //Debug.Log($"recruitPos: {recruiterPos}\n recruitPosX: {recruitPosX}\n recruitPosY: {recruitPosY}\n side: {side}");
         return new Vector2Int(recruitPosX, recruitPosY);
     }
 
+    //recruits gem given gem to recruit and recruiter gem
     public Vector2Int RecruitGem (GameObject gem, GameObject recruiter)
     {
+        //dothorizontal defines whether the gem landed left or right of the recruiter and
+        //dotvertical defines whether the gem landed on top or bottom of the recruiter
         float dotHorizontal = Vector2.Dot(recruiter.transform.position - gem.transform.position, recruiter.transform.right);
         float dotVertical = Vector2.Dot(recruiter.transform.position - gem.transform.position, Vector2.up);
 
@@ -221,26 +298,10 @@ public class GemManager : MonoBehaviour
         }
     }
 
-    private class RelativePositions
-    {
-        public const int LEFTTOP = 1;
-        public const int LEFTMIDDLE = 2;
-        public const int LEFTBOT = 3;
-        public const int RIGHTTOP = 4;
-        public const int RIGHTMIDDLE = 5;
-        public const int RIGHTBOT = 6;
-
-        public static bool TOP (int _side) => _side == LEFTTOP || _side == RIGHTTOP;
-
-        public static bool BOT (int _side) => _side == LEFTBOT || _side == RIGHTBOT;
-
-        public static bool MIDDLE (int _side) => _side == LEFTMIDDLE || _side == RIGHTMIDDLE;
-
-        public static bool LEFT (int _side) => _side == LEFTMIDDLE || _side == LEFTTOP || _side == LEFTBOT;
-
-        public static bool RIGHT (int _side) => _side == RIGHTMIDDLE || _side == RIGHTTOP || _side == RIGHTBOT;
-    }
-
+    /// <summary>
+    /// returns random sprite from gem sprite dictionary
+    /// </summary>
+    /// <returns></returns>
     public static Sprite GetRandomGemSprite ()
     {
         return gemSpriteDict[gemNames[Random.Range(0, gemNames.Length)]];
