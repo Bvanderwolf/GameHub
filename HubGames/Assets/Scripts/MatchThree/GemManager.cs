@@ -25,6 +25,7 @@ public class GemManager : MonoBehaviour
     private MatchThreeUI userinterface;
 
     public readonly int MIN_EXPLODE_COUNT = 3;
+    private readonly float MIDDLE_ATTACH_RANGE = 0.3f;
 
     public bool IsRootGem (GameObject gem) => GemSockets[0] != null && GemSockets[0].Any((socket) => socket.gem == gem);
 
@@ -146,7 +147,7 @@ public class GemManager : MonoBehaviour
 
         /*if the recruited gem was recruited on top of a recruiter and this recruiter was
          on the top row of the GemSockets list we add a new row to it so it can fit*/
-        if (Attaching.TOP(side) && recruiterPos.y == GemSockets.Count - 1)
+        if (RelativePositions.TOP(side) && recruiterPos.y == GemSockets.Count - 1)
         {
             AddNullRowToGemList();
         }
@@ -156,24 +157,24 @@ public class GemManager : MonoBehaviour
          these variables we change the recruit position of the gem. If the gem was recruited
          by attaching in the middle we can just check left vs right and set the
          recruit y pos to the recruit y position. */
-        if (!Attaching.MIDDLE(side))
+        if (!RelativePositions.MIDDLE(side))
         {
-            if (Attaching.LEFT(side))
+            if (RelativePositions.LEFT(side))
             {
                 recruitPosX = recruiterPos.x - 1;
-                recruitPosY = Attaching.TOP(side) ? recruiterPos.y + 1 : recruiterPos.y - 1;
+                recruitPosY = RelativePositions.TOP(side) ? recruiterPos.y + 1 : recruiterPos.y - 1;
                 if (!isEvenRow) recruitPosX++;
             }
-            else if (Attaching.RIGHT(side))
+            else if (RelativePositions.RIGHT(side))
             {
                 recruitPosX = recruiterPos.x + 1;
-                recruitPosY = Attaching.TOP(side) ? recruiterPos.y + 1 : recruiterPos.y - 1;
+                recruitPosY = RelativePositions.TOP(side) ? recruiterPos.y + 1 : recruiterPos.y - 1;
                 if (isEvenRow) recruitPosX--;
             }
         }
         else
         {
-            recruitPosX = side == Attaching.LEFTMIDDLE ? recruiterPos.x - 1 : recruiterPos.x + 1;
+            recruitPosX = side == RelativePositions.LEFTMIDDLE ? recruiterPos.x - 1 : recruiterPos.x + 1;
             recruitPosY = recruiterPos.y;
         }
 
@@ -184,7 +185,7 @@ public class GemManager : MonoBehaviour
         GemSockets[recruitPosY][recruitPosX] = new GemSocket(gem, socketPos);
         gem.transform.position = socketPos;
 
-        Debug.Log($"recruitPos: {recruiterPos}\n recruitPosX: {recruitPosX}\n recruitPosY: {recruitPosY}\n side: {side}");
+        //Debug.Log($"recruitPos: {recruiterPos}\n recruitPosX: {recruitPosX}\n recruitPosY: {recruitPosY}\n side: {side}");
         return new Vector2Int(recruitPosX, recruitPosY);
     }
 
@@ -197,45 +198,44 @@ public class GemManager : MonoBehaviour
 
         if (dotHorizontal <= 0)
         {
-            if (dotVertical < -Attaching.MIDDLE_ATTACH_RANGE)
+            if (dotVertical < -MIDDLE_ATTACH_RANGE)
             {
-                return AddGemToList(gem, recruiter, Attaching.RIGHTBOT);
+                return AddGemToList(gem, recruiter, RelativePositions.RIGHTBOT);
             }
-            else if (dotVertical > Attaching.MIDDLE_ATTACH_RANGE)
+            else if (dotVertical > MIDDLE_ATTACH_RANGE)
             {
-                return AddGemToList(gem, recruiter, Attaching.RIGHTTOP);
+                return AddGemToList(gem, recruiter, RelativePositions.RIGHTTOP);
             }
             else
             {
-                return AddGemToList(gem, recruiter, Attaching.RIGHTMIDDLE);
+                return AddGemToList(gem, recruiter, RelativePositions.RIGHTMIDDLE);
             }
         }
         else
         {
-            if (dotVertical < -Attaching.MIDDLE_ATTACH_RANGE)
+            if (dotVertical < -MIDDLE_ATTACH_RANGE)
             {
-                return AddGemToList(gem, recruiter, Attaching.LEFTBOT);
+                return AddGemToList(gem, recruiter, RelativePositions.LEFTBOT);
             }
-            else if (dotVertical > Attaching.MIDDLE_ATTACH_RANGE)
+            else if (dotVertical > MIDDLE_ATTACH_RANGE)
             {
-                return AddGemToList(gem, recruiter, Attaching.LEFTTOP);
+                return AddGemToList(gem, recruiter, RelativePositions.LEFTTOP);
             }
             else
             {
-                return AddGemToList(gem, recruiter, Attaching.LEFTMIDDLE);
+                return AddGemToList(gem, recruiter, RelativePositions.LEFTMIDDLE);
             }
         }
     }
 
-    private class Attaching
+    private class RelativePositions
     {
-        public static int LEFTTOP = 1;
-        public static int LEFTMIDDLE = 2;
-        public static int LEFTBOT = 3;
-        public static int RIGHTTOP = 4;
-        public static int RIGHTMIDDLE = 5;
-        public static int RIGHTBOT = 6;
-        public static float MIDDLE_ATTACH_RANGE = 0.3f;
+        public const int LEFTTOP = 1;
+        public const int LEFTMIDDLE = 2;
+        public const int LEFTBOT = 3;
+        public const int RIGHTTOP = 4;
+        public const int RIGHTMIDDLE = 5;
+        public const int RIGHTBOT = 6;
 
         public static bool TOP (int _side) => _side == LEFTTOP || _side == RIGHTTOP;
 
@@ -291,23 +291,32 @@ public class GemManager : MonoBehaviour
         return gems;
     }
 
-    public List<GameObject> GetGemsInCollum (int col)
+    private List<Vector2Int> GetPositionsOfEmptySockets ()
     {
-        List<GameObject> gems = new List<GameObject>();
-        bool lastCol = col == MAX_START_GEMS_PER_ROW - 1;
-        if (col >= 0 && col < MAX_START_GEMS_PER_ROW)
+        List<Vector2Int> positions = new List<Vector2Int>();
+        for (int row = 0; row < GemSockets.Count; row++)
         {
-            for (int row = 0; row < GemSockets.Count; row++)
+            for (int col = 0; col < GemSockets[row].Count; col++)
             {
-                int _col;
-
-                if (lastCol) _col = (row + 1) % 2 == 0 ? MAX_START_GEMS_PER_ROW - 1 : MAX_START_GEMS_PER_ROW - 2;
-                else _col = col;
-
-                gems.Add(GemSockets[row][_col].gem);
+                if (GemSockets[row][col].gem == null) positions.Add(new Vector2Int(col, row));
             }
         }
-        return gems;
+        return positions;
+    }
+
+    public List<Vector2Int> GetPositionsOfNeighbours (Vector2Int pos)
+    {
+        List<Vector2Int> positions = new List<Vector2Int>();
+        for (int row = 0; row < GemSockets.Count; row++)
+        {
+            for (int col = 0; col < GemSockets[row].Count; col++)
+            {
+                GemBehaviour behaviour = GemSockets[row][col].gem?.GetComponent<GemBehaviour>();
+                if (behaviour != null && pos != behaviour.PositionInList && IsNeighbour(pos, behaviour.PositionInList))
+                    positions.Add(new Vector2Int(col, row));
+            }
+        }
+        return positions;
     }
 
     public bool IsNeighbour (Vector2Int a, Vector2Int b)
@@ -381,7 +390,43 @@ public class GemManager : MonoBehaviour
 
     private void CutGemsNotAttachedToRoot ()
     {
-        List<GameObject> gems = GetGemsInCollum(MAX_START_GEMS_PER_ROW - 1);
-        //check of er een of meerdere gems die null zijn tussen 2 gems zit
+        List<Vector2Int> emptySocketPositions = GetPositionsOfEmptySockets();
+        List<Vector2Int> minimums = new List<Vector2Int>();
+
+        for (int col = 0; col < MAX_START_GEMS_PER_ROW; col++)
+        {
+            List<Vector2Int> colPos = emptySocketPositions.FindAll((v) => v.x == col);
+            int minimum = colPos.Count != 0 ? colPos.Min((v) => v.y) : GemSockets.Count - 1;
+            minimums.Add(new Vector2Int(col, minimum));
+        }
+
+        foreach (List<GemSocket> list in GemSockets)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                GemBehaviour behaviour = list[i].gem?.GetComponent<GemBehaviour>();
+                if (behaviour != null)
+                {
+                    Vector2Int pos = behaviour.PositionInList;
+                    Vector2Int minimum = minimums.Find((v) => v.x == pos.x);
+                    bool isEvenRow = (pos.y + 1) % 2 == 0;
+                    if (pos.y > minimum.y)
+                    {
+                        if (!behaviour.FindRoot())
+                        {
+                            Destroy(list[i].gem);
+                            Vector2 socketPos = list[i].pos;
+                            list[i] = new GemSocket(null, socketPos);
+                        }
+                    }
+                }
+            }
+        }
+
+        GemSockets.ForEach((list) => list.ForEach((socket) =>
+        {
+            GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
+            if (behaviour != null && behaviour.Rooting) behaviour.Rooting = false;
+        }));
     }
 }

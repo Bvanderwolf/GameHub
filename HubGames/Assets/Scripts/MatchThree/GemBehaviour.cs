@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
 
 public class GemBehaviour : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class GemBehaviour : MonoBehaviour
     [SerializeField] private Vector2Int positionInList;
 
     public bool Explodable = false;
+    public bool Rooting = false;
 
     public Vector2Int PositionInList => positionInList;
 
@@ -51,6 +53,23 @@ public class GemBehaviour : MonoBehaviour
                 OnTriedExploding();
             }
         }
+    }
+
+    public bool FindRoot ()
+    {
+        Rooting = true;
+        if (positionInList.y == 0) return true;
+
+        List<Vector2Int> neighbourPositions = manager.GetPositionsOfNeighbours(positionInList);
+        if (neighbourPositions.Count != 0)
+        {
+            if (neighbourPositions.TrueForAll((v) => manager.GetGem(v).GetComponent<GemBehaviour>().Rooting))
+                return false;
+
+            int min = neighbourPositions.Min((v) => v.y);
+            return manager.GetGem(neighbourPositions.Find((v) => v.y == min)).GetComponent<GemBehaviour>().FindRoot();
+        }
+        else return false;
     }
 
     private void TryExplosion ()
