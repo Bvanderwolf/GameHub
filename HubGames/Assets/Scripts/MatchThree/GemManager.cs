@@ -306,4 +306,14 @@ public class GemManager : MonoBehaviour
     {
         return gemSpriteDict[gemNames[Random.Range(0, gemNames.Length)]];
     }
+
+    public GameObject GetGem (Vector2Int position)
+    {
+        if (position.y >= 0 && position.y < GemSockets.Count
+        && position.x >= 0 && position.x < GemSockets[position.y].Count)
+        {
+            return GemSockets[position.y][position.x].gem;
+        }
+        else return null;
+    }
 }
