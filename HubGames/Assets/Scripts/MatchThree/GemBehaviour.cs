@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
 using System;
 using System.Linq;
 
@@ -11,10 +10,10 @@ public class GemBehaviour : MonoBehaviour
     [SerializeField] private Vector2Int positionInList;
 
     public Vector2Int PositionInList => positionInList;
-    public Action<GemBehaviour> OnRootSearchFailed;
+    public event Action<GemBehaviour> OnRootSearchFailed;
 
     private readonly float explodeDelay = 0.1f;
-    private readonly float explodeSpeed = 3f;
+    private readonly float explodeSpeed = 5f;
     private readonly float fadeSpeed = 1.5f;
 
     public bool exploding { get; private set; } = false;
@@ -28,6 +27,7 @@ public class GemBehaviour : MonoBehaviour
     private Rigidbody2D body;
     private readonly float explodeRadius = 4.5f;
     private readonly float circleRadius = 2.6f;
+    private readonly float fallYOffset = 1.5f;
 
     public string rootPath = "";
 
@@ -38,6 +38,7 @@ public class GemBehaviour : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
     }
 
+    //sets up gem by getting manager reference, position, attaching OnRootSerachFailed event and creating root path
     public void initializeWithManager (GemManager _manager, Vector2Int _position)
     {
         manager = _manager;
@@ -58,13 +59,16 @@ public class GemBehaviour : MonoBehaviour
 
     private void OnTriggerEnter2D (Collider2D collision)
     {
+        //If a Gem gets into contact with another gem it attaches if not kinematic
         if (collision.gameObject.tag == "Gem")
         {
             if (!body.isKinematic) Attach(collision);
 
+            //if the gem is exploding when getting into contact with another gem,
+            //it makes the other gem explode if it has the same sprite
             if (exploding)
             {
-                Debug.Log($"exploding at {positionInList}");
+                //Debug.Log($"exploding at {positionInList}");
                 if (collision.gameObject.GetComponent<SpriteRenderer>().sprite == spriteRend.sprite)
                 {
                     collision.gameObject.GetComponent<GemBehaviour>().Explode();
@@ -73,7 +77,7 @@ public class GemBehaviour : MonoBehaviour
         }
     }
 
-    //attaches gem to given collider
+    //Sets up physics values for getting recruited, starts exploding and lets itself be recruited by given colliding gem
     private void Attach (Collider2D collision)
     {
         SetDefaultPhysicsValues();
@@ -81,12 +85,16 @@ public class GemBehaviour : MonoBehaviour
         collision.gameObject.GetComponent<GemBehaviour>().Recruit(this.gameObject);
     }
 
+    //Tries creating root path based on position in list.
     public void CreateRootPath ()
     {
         rootPath += $"{positionInList.x}:{positionInList.y}";
+        //if the gem is already in the top row it already has it's root path created
         if (positionInList.y != 0)
         {
             SearchSequential();
+            /*if the path created by sequential search is valid we reset values of gems searched through.
+            If failing removes itself and fires OnRootSearchFailed event*/
             if (!VerifyRootPath())
             {
                 Debug.Log($"creating root path failed by gem with position {positionInList} :: destroying it");
@@ -98,6 +106,7 @@ public class GemBehaviour : MonoBehaviour
         else hasRootPath = true;
     }
 
+    //tries verifying the current root path and tries creating a new one if it is not valid
     public void CheckOnRootPath ()
     {
         if (!VerifyRootPath())
@@ -107,9 +116,13 @@ public class GemBehaviour : MonoBehaviour
         }
     }
 
-    private void ResetRootSearchValues ()
+    //goes through the root path string and resets usedForRootSearch values for searched through gems.
+    //If no path is given the function will use the "rootPath" value
+    private void ResetRootSearchValues (string path = "")
     {
-        string[] positions = rootPath.Split(',');
+        if (path == "") path = rootPath;
+
+        string[] positions = path.Split(',');
         foreach (string stringPos in positions)
         {
             string[] axis = stringPos.Split(':');
@@ -119,12 +132,16 @@ public class GemBehaviour : MonoBehaviour
         }
     }
 
+    //Tries verifying the root path string and returns is it valid or not
     private bool VerifyRootPath ()
     {
+        //split rootpath up in seperate positions
         string[] positions = rootPath.Split(',');
+        //if there are no positions with y = 0 meaning no root position we return false
         if (!positions.Any((s) => int.Parse(s.Split(':')[1]) == 0))
             return false;
 
+        //if any of the positions in the list correlate to a non-existend gem we return false
         foreach (string stringPos in positions)
         {
             string[] axis = stringPos.Split(':');
@@ -139,140 +156,74 @@ public class GemBehaviour : MonoBehaviour
         return true;
     }
 
+    //goes through all possible searchable positionTypes to start from and 1 by 1 searches through them
     private void SearchSequential ()
     {
         string subRootPath = "";
 
-        Vector2Int gemTopPosition = new Vector2Int(positionInList.x, positionInList.y - 1);
-        GemBehaviour gemTopBehaviour = manager.GetGem(gemTopPosition)?.GetComponent<GemBehaviour>();
-        if (gemTopBehaviour != null && !gemTopBehaviour.usedForRootSearch)
+        Func<Vector2Int, bool, Vector2Int>[] positionTypes = new Func<Vector2Int, bool, Vector2Int>[6]
         {
-            gemTopBehaviour.usedForRootSearch = true;
-            if (SearchFrom(gemTopPosition, ref subRootPath))
-            {
-                rootPath += subRootPath;
-                hasRootPath = true;
-                return;
-            }
-            subRootPath = "";
-        }
+            (v, even) => new Vector2Int(v.x, v.y - 1), //top
+            (v, even) => new Vector2Int(even ? v.x - 1 : v.x + 1, v.y - 1), //topSide based on even row
+            (v, even) => new Vector2Int(v.x, v.y + 1), //bottom
+            (v, even) => new Vector2Int(v.x + 1, v.y + 1), //bottom side
+            (v, even) => new Vector2Int(v.x - 1, v.y), //left
+            (v, even) => new Vector2Int(v.x + 1, v.y) //right
+        };
+
         bool isEvenRow = (positionInList.y + 1) % 2 == 0;
-        Vector2Int gemTopSidePosition = new Vector2Int(isEvenRow ? positionInList.x - 1 : positionInList.x + 1, positionInList.y - 1);
-        GemBehaviour gemTopSideBehaviour = manager.GetGem(gemTopSidePosition)?.GetComponent<GemBehaviour>();
-        if (gemTopSideBehaviour != null && !gemTopSideBehaviour.usedForRootSearch)
+        //go through each positionType and if found gem is not null and not used yet for root search
+        //we use it to search from.
+        for (int i = 0; i < positionTypes.Length; i++)
         {
-            gemTopSideBehaviour.usedForRootSearch = true;
-            if (SearchFrom(gemTopSidePosition, ref subRootPath))
+            Vector2Int position = positionTypes[i](positionInList, isEvenRow);
+            GemBehaviour behaviour = manager.GetGem(position)?.GetComponent<GemBehaviour>();
+            if (behaviour != null && !behaviour.usedForRootSearch)
             {
-                rootPath += subRootPath;
-                hasRootPath = true;
-                return;
+                behaviour.usedForRootSearch = true;
+                //if we find the root from a search we add the sub root path to our root path and break from the loop
+                if (SearchFrom(position, ref subRootPath))
+                {
+                    rootPath += subRootPath;
+                    hasRootPath = true;
+                    break;
+                }
+                ResetRootSearchValues(subRootPath.Remove(0));
+                subRootPath = "";
             }
-            subRootPath = "";
-        }
-        Vector2Int gemBotPosition = new Vector2Int(positionInList.x, positionInList.y + 1);
-        GemBehaviour gemBotBehaviour = manager.GetGem(gemBotPosition)?.GetComponent<GemBehaviour>();
-        if (gemBotBehaviour != null && !gemBotBehaviour.usedForRootSearch)
-        {
-            gemBotBehaviour.usedForRootSearch = true;
-            if (SearchFrom(gemBotPosition, ref subRootPath))
-            {
-                rootPath += subRootPath;
-                hasRootPath = true;
-                return;
-            }
-            subRootPath = "";
-        }
-        Vector2Int gemBotSidePosition = new Vector2Int(positionInList.x + 1, positionInList.y + 1);
-        GemBehaviour gemBotSideBehaviour = manager.GetGem(gemBotSidePosition)?.GetComponent<GemBehaviour>();
-        if (gemBotSideBehaviour != null && !gemBotSideBehaviour.usedForRootSearch)
-        {
-            gemBotSideBehaviour.usedForRootSearch = true;
-            if (SearchFrom(gemBotSidePosition, ref subRootPath))
-            {
-                rootPath += subRootPath;
-                hasRootPath = true;
-                return;
-            }
-            subRootPath = "";
-        }
-        Vector2Int gemLeftPosition = new Vector2Int(positionInList.x - 1, positionInList.y);
-        GemBehaviour gemLeftBehaviour = manager.GetGem(gemLeftPosition)?.GetComponent<GemBehaviour>();
-        if (gemLeftBehaviour != null && !gemLeftBehaviour.usedForRootSearch)
-        {
-            gemLeftBehaviour.usedForRootSearch = true;
-            if (SearchFrom(gemLeftPosition, ref subRootPath))
-            {
-                rootPath += subRootPath;
-                hasRootPath = true;
-                return;
-            }
-            subRootPath = "";
-        }
-        Vector2Int gemRightPosition = new Vector2Int(positionInList.x + 1, positionInList.y);
-        GemBehaviour gemRightBehaviour = manager.GetGem(gemRightPosition)?.GetComponent<GemBehaviour>();
-        if (gemRightBehaviour != null && !gemRightBehaviour.usedForRootSearch)
-        {
-            gemRightBehaviour.usedForRootSearch = true;
-            if (SearchFrom(gemRightPosition, ref subRootPath))
-            {
-                rootPath += subRootPath;
-                hasRootPath = true;
-                return;
-            }
-            subRootPath = "";
         }
     }
 
+    //searches from given position to neighbouring gems
     private bool SearchFrom (Vector2Int fromPos, ref string subRootPath)
     {
         subRootPath += $",{fromPos.x}:{fromPos.y}";
-
+        //if the position reached has y = 0 it means we reached the root and the search is succesfully completed
         if (fromPos.y == 0) return true;
 
-        Vector2Int gemTopPosition = new Vector2Int(fromPos.x, fromPos.y - 1);
-        GemBehaviour gemTopBehaviour = manager.GetGem(gemTopPosition)?.GetComponent<GemBehaviour>();
-        if (gemTopBehaviour != null && !gemTopBehaviour.usedForRootSearch)
+        Func<Vector2Int, bool, Vector2Int>[] positionTypes = new Func<Vector2Int, bool, Vector2Int>[6]
         {
-            gemTopBehaviour.usedForRootSearch = true;
-            return (SearchFrom(gemTopPosition, ref subRootPath));
-        }
+            (v, even) => new Vector2Int(v.x, v.y - 1),
+            (v, even) => new Vector2Int(even ? v.x - 1 : v.x + 1, v.y - 1),
+            (v, even) => new Vector2Int(v.x, v.y + 1),
+            (v, even) => new Vector2Int(v.x + 1, v.y + 1),
+            (v, even) => new Vector2Int(v.x - 1, v.y),
+            (v, even) => new Vector2Int(v.x + 1, v.y)
+        };
         bool isEvenRow = (fromPos.y + 1) % 2 == 0;
-        Vector2Int gemTopSidePosition = new Vector2Int(isEvenRow ? fromPos.x - 1 : fromPos.x + 1, fromPos.y - 1);
-        GemBehaviour gemSideTopBehaviour = manager.GetGem(gemTopSidePosition)?.GetComponent<GemBehaviour>();
-        if (gemSideTopBehaviour != null && !gemSideTopBehaviour.usedForRootSearch)
+        //go through each possitionType and if found gem is not null or already used for root search
+        //we can search further from this gem
+        for (int i = 0; i < positionTypes.Length; i++)
         {
-            gemSideTopBehaviour.usedForRootSearch = true;
-            return SearchFrom(gemTopSidePosition, ref subRootPath);
+            Vector2Int position = positionTypes[i](fromPos, isEvenRow);
+            GemBehaviour behaviour = manager.GetGem(position)?.GetComponent<GemBehaviour>();
+            if (behaviour != null && !behaviour.usedForRootSearch)
+            {
+                behaviour.usedForRootSearch = true;
+                return SearchFrom(position, ref subRootPath);
+            }
         }
-        Vector2Int gemBotPosition = new Vector2Int(fromPos.x, fromPos.y + 1);
-        GemBehaviour gemBotBehaviour = manager.GetGem(gemBotPosition)?.GetComponent<GemBehaviour>();
-        if (gemBotBehaviour != null && !gemBotBehaviour.usedForRootSearch)
-        {
-            gemBotBehaviour.usedForRootSearch = true;
-            return SearchFrom(gemBotPosition, ref subRootPath);
-        }
-        Vector2Int gemBotSidePosition = new Vector2Int(fromPos.x + 1, fromPos.y + 1);
-        GemBehaviour gemBotSideBehaviour = manager.GetGem(gemBotSidePosition)?.GetComponent<GemBehaviour>();
-        if (gemBotSideBehaviour != null && !gemBotSideBehaviour.usedForRootSearch)
-        {
-            gemBotSideBehaviour.usedForRootSearch = true;
-            return SearchFrom(gemBotSidePosition, ref subRootPath);
-        }
-        Vector2Int gemLeftPosition = new Vector2Int(fromPos.x - 1, fromPos.y);
-        GemBehaviour gemLeftBehaviour = manager.GetGem(gemLeftPosition)?.GetComponent<GemBehaviour>();
-        if (gemLeftBehaviour != null && !gemLeftBehaviour.usedForRootSearch)
-        {
-            gemLeftBehaviour.usedForRootSearch = true;
-            return SearchFrom(gemLeftPosition, ref subRootPath);
-        }
-        Vector2Int gemRightPosition = new Vector2Int(fromPos.x + 1, fromPos.y);
-        GemBehaviour gemRightBehaviour = manager.GetGem(gemRightPosition)?.GetComponent<GemBehaviour>();
-        if (gemRightBehaviour != null && !gemRightBehaviour.usedForRootSearch)
-        {
-            gemRightBehaviour.usedForRootSearch = true;
-            return SearchFrom(gemRightPosition, ref subRootPath);
-        }
+        //if we all positionTypes have been iterated through without succes the search was unsuccesfull
         return false;
     }
 
@@ -313,15 +264,17 @@ public class GemBehaviour : MonoBehaviour
     public void RemoveSelf (int positionInExplodingGems)
     {
         removingSelf = true;
-        StartCoroutine(FadeToDestroy(positionInExplodingGems * explodeDelay));
+        StartCoroutine(FadingFallToDestroy(positionInExplodingGems * explodeDelay));
     }
 
     //linearly interpolates alpha value of image color from 1 to 0 and then destroys gameobject
-    private IEnumerator FadeToDestroy (float delay)
+    private IEnumerator FadingFallToDestroy (float delay)
     {
         yield return new WaitForSeconds(delay);
 
         float currentLerpTime = 0;
+        float startYPos = transform.position.y;
+        float targetYPos = startYPos - fallYOffset;
         while (currentLerpTime != 1)
         {
             currentLerpTime += Time.deltaTime * fadeSpeed;
@@ -329,6 +282,9 @@ public class GemBehaviour : MonoBehaviour
 
             float lerpedAlpha = 1 + (currentLerpTime * (0 - 1));
             spriteRend.color = new Color(1, 1, 1, lerpedAlpha);
+
+            float yPosition = startYPos + (currentLerpTime * (targetYPos - startYPos));
+            transform.position = new Vector2(transform.position.x, yPosition);
             yield return null;
         }
         Destroy(this.gameObject);

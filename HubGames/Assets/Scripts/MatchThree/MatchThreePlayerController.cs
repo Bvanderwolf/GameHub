@@ -18,9 +18,16 @@ public class MatchThreePlayerController : MonoBehaviour
     private Timer shootTimer;
     private bool canShoot = true;
 
+    private GemManager gemManager;
+
+    private void Awake ()
+    {
+        gemManager = FindObjectOfType<GemManager>();
+    }
+
     private void Start ()
     {
-        gemHolderRend.sprite = GemManager.GetRandomGemSprite();
+        gemHolderRend.sprite = gemManager.GetRandomGemSprite();
     }
 
     private void Update ()
@@ -40,12 +47,12 @@ public class MatchThreePlayerController : MonoBehaviour
             indicator.transform.RotateAround(pivot.transform.position, Vector3.forward, -(rotateSpeed * Time.deltaTime));
         }
 
-        if (Input.GetKeyDown(KeyCode.Space) && canShoot)
+        if (Input.GetKeyDown(KeyCode.Space) && canShoot && !gemManager.ObservingGems)
         {
             GameObject gem = Instantiate(gemPrefab, pivot.transform.position, Quaternion.identity);
             gem.GetComponent<SpriteRenderer>().sprite = gemHolderRend.sprite;
             gem.GetComponent<Rigidbody2D>().AddForce(indicator.transform.up * shootForce);
-            gemHolderRend.sprite = GemManager.GetRandomGemSprite();
+            gemHolderRend.sprite = gemManager.GetRandomGemSprite();
 
             canShoot = false;
             if (shootTimer != null)

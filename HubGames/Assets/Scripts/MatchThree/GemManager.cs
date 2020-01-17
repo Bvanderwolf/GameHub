@@ -29,7 +29,7 @@ public class GemManager : MonoBehaviour
 
     public List<List<GemSocket>> GemSockets { get; } = new List<List<GemSocket>>();
 
-    private bool explodingGems = false;
+    public bool ObservingGems { get; private set; } = false;
 
     private void Awake ()
     {
@@ -92,12 +92,12 @@ public class GemManager : MonoBehaviour
     private void FixedUpdate ()
     {
         //if there are gems exploding (defined by "explodingGems") we observe the gemsocket list
-        if (explodingGems) ObserveExplodingGems();
+        if (ObservingGems) ObserveExplodingGems();
     }
 
     private void StartObservingExplodingGems ()
     {
-        explodingGems = true;
+        ObservingGems = true;
     }
 
     //looks at all gems in sockets and checks if all gems that are exploding are finished or not
@@ -166,7 +166,7 @@ public class GemManager : MonoBehaviour
             }
 
             //we stop observing gems by setting "explodingGems" to false
-            explodingGems = false;
+            ObservingGems = false;
         }
     }
 
@@ -324,7 +324,7 @@ public class GemManager : MonoBehaviour
     /// returns random sprite from gem sprite dictionary
     /// </summary>
     /// <returns></returns>
-    public static Sprite GetRandomGemSprite ()
+    public Sprite GetRandomGemSprite ()
     {
         return gemSpriteDict[gemNames[Random.Range(0, gemNames.Length)]];
     }
