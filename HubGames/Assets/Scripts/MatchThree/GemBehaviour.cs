@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
+using System.Linq;
 
 public class GemBehaviour : MonoBehaviour
 {
@@ -9,6 +11,7 @@ public class GemBehaviour : MonoBehaviour
     [SerializeField] private Vector2Int positionInList;
 
     public Vector2Int PositionInList => positionInList;
+    public Action<GemBehaviour> OnRootSearchFailed;
 
     private readonly float explodeDelay = 0.1f;
     private readonly float explodeSpeed = 3f;
@@ -16,8 +19,10 @@ public class GemBehaviour : MonoBehaviour
 
     public bool exploding { get; private set; } = false;
     public bool exploded = false;
+    public bool removingSelf { get; private set; } = false;
 
     [SerializeField] private bool usedForRootSearch = false;
+    [SerializeField] private bool hasRootPath = false;
 
     private CircleCollider2D circleCollider;
     private Rigidbody2D body;
@@ -25,7 +30,6 @@ public class GemBehaviour : MonoBehaviour
     private readonly float circleRadius = 2.6f;
 
     public string rootPath = "";
-    public bool hasRootPath = false;
 
     private void Awake ()
     {
@@ -38,6 +42,7 @@ public class GemBehaviour : MonoBehaviour
     {
         manager = _manager;
         positionInList = _position;
+        OnRootSearchFailed += manager.RemoveGemFromList;
         CreateRootPath();
     }
 
@@ -76,17 +81,33 @@ public class GemBehaviour : MonoBehaviour
         collision.gameObject.GetComponent<GemBehaviour>().Recruit(this.gameObject);
     }
 
-    private void CreateRootPath ()
+    public void CreateRootPath ()
     {
         rootPath += $"{positionInList.x}:{positionInList.y}";
         if (positionInList.y != 0)
         {
             SearchSequential();
-            VerifyRootPath();
+            if (!VerifyRootPath())
+            {
+                Debug.Log($"creating root path failed by gem with position {positionInList} :: destroying it");
+                RemoveSelf(1);
+                OnRootSearchFailed(this);
+            }
+            else ResetRootSearchValues();
+        }
+        else hasRootPath = true;
+    }
+
+    public void CheckOnRootPath ()
+    {
+        if (!VerifyRootPath())
+        {
+            rootPath = "";
+            CreateRootPath();
         }
     }
 
-    private void VerifyRootPath ()
+    private void ResetRootSearchValues ()
     {
         string[] positions = rootPath.Split(',');
         foreach (string stringPos in positions)
@@ -94,12 +115,28 @@ public class GemBehaviour : MonoBehaviour
             string[] axis = stringPos.Split(':');
             Vector2Int pos = new Vector2Int(int.Parse(axis[0]), int.Parse(axis[1]));
             GemBehaviour behaviour = manager.GetGem(pos)?.GetComponent<GemBehaviour>();
-            if (behaviour != null)
-            {
-                if (behaviour.usedForRootSearch) behaviour.usedForRootSearch = false;
-            }
-            else Debug.LogError($"root path of {positionInList} has null gem in it");
+            if (behaviour.usedForRootSearch) behaviour.usedForRootSearch = false;
         }
+    }
+
+    private bool VerifyRootPath ()
+    {
+        string[] positions = rootPath.Split(',');
+        if (!positions.Any((s) => int.Parse(s.Split(':')[1]) == 0))
+            return false;
+
+        foreach (string stringPos in positions)
+        {
+            string[] axis = stringPos.Split(':');
+            Vector2Int pos = new Vector2Int(int.Parse(axis[0]), int.Parse(axis[1]));
+            GemBehaviour behaviour = manager.GetGem(pos)?.GetComponent<GemBehaviour>();
+            if (behaviour == null)
+            {
+                Debug.Log($"root path of {positionInList} has null gem in it @ position: {pos}");
+                return false;
+            }
+        }
+        return true;
     }
 
     private void SearchSequential ()
@@ -275,6 +312,7 @@ public class GemBehaviour : MonoBehaviour
     //start FadeToDestroy courotine to remove itself based on given position In Exploding Gems sequence
     public void RemoveSelf (int positionInExplodingGems)
     {
+        removingSelf = true;
         StartCoroutine(FadeToDestroy(positionInExplodingGems * explodeDelay));
     }
 

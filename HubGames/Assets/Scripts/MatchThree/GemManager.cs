@@ -124,9 +124,11 @@ public class GemManager : MonoBehaviour
                 });
             }
 
-            //if the explodeCount is high enough we can remove the gems that have exploded
+            //if the explodeCount is high enough we can remove the gems that have exploded,
             if (explodeCount >= MIN_EXPLODE_COUNT)
             {
+                //for each gem exploded we let it remove itself and update the gemSocket list,
+                //currentRecruit value and explodeCount value accordingly
                 foreach (List<GemSocket> list in GemSockets)
                 {
                     for (int i = 0; i < list.Count; i++)
@@ -135,9 +137,21 @@ public class GemManager : MonoBehaviour
                         if (behaviour != null && behaviour.exploded)
                         {
                             behaviour.RemoveSelf(explodeCount);
+                            behaviour.OnRootSearchFailed -= RemoveGemFromList;
                             list[i] = new GemSocket(null, behaviour.transform.position);
                             explodeCount--;
                         }
+                    }
+                }
+
+                //after removing the gems from the GemSocket list we need to check the correctness of the rootpath for each gem
+                //maybe removing some in the process because of no valid root path
+                for (int row = 0; row < GemSockets.Count; row++)
+                {
+                    for (int col = 0; col < GemSockets[row].Count; col++)
+                    {
+                        GemBehaviour behaviour = GemSockets[row][col].gem?.GetComponent<GemBehaviour>();
+                        if (behaviour != null) behaviour.CheckOnRootPath();
                     }
                 }
             }
@@ -252,6 +266,7 @@ public class GemManager : MonoBehaviour
         GemSockets[recruitPosY][recruitPosX] = new GemSocket(gem, socketPos);
         gem.transform.position = socketPos;
         gem.transform.parent = transform;
+
         StartObservingExplodingGems();
 
         //Debug.Log($"recruitPos: {recruiterPos}\n recruitPosX: {recruitPosX}\n recruitPosY: {recruitPosY}\n side: {side}");
@@ -296,6 +311,13 @@ public class GemManager : MonoBehaviour
                 return AddGemToList(gem, recruiter, RelativePositions.LEFTMIDDLE);
             }
         }
+    }
+
+    public void RemoveGemFromList (GemBehaviour behaviour)
+    {
+        behaviour.OnRootSearchFailed -= RemoveGemFromList;
+        Vector2 pos = behaviour.transform.position;
+        GemSockets[behaviour.PositionInList.y][behaviour.PositionInList.x] = new GemSocket(null, pos);
     }
 
     /// <summary>
