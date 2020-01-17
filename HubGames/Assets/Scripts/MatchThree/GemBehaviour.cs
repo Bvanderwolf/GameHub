@@ -17,7 +17,7 @@ public class GemBehaviour : MonoBehaviour
     public bool exploding { get; private set; } = false;
     public bool exploded = false;
 
-    public bool usedForRootSearch { get; private set; } = false;
+    [SerializeField] private bool usedForRootSearch = false;
 
     private CircleCollider2D circleCollider;
     private Rigidbody2D body;
@@ -82,6 +82,23 @@ public class GemBehaviour : MonoBehaviour
         if (positionInList.y != 0)
         {
             SearchSequential();
+            VerifyRootPath();
+        }
+    }
+
+    private void VerifyRootPath ()
+    {
+        string[] positions = rootPath.Split(',');
+        foreach (string stringPos in positions)
+        {
+            string[] axis = stringPos.Split(':');
+            Vector2Int pos = new Vector2Int(int.Parse(axis[0]), int.Parse(axis[1]));
+            GemBehaviour behaviour = manager.GetGem(pos)?.GetComponent<GemBehaviour>();
+            if (behaviour != null)
+            {
+                if (behaviour.usedForRootSearch) behaviour.usedForRootSearch = false;
+            }
+            else Debug.LogError($"root path of {positionInList} has null gem in it");
         }
     }
 
@@ -90,76 +107,135 @@ public class GemBehaviour : MonoBehaviour
         string subRootPath = "";
 
         Vector2Int gemTopPosition = new Vector2Int(positionInList.x, positionInList.y - 1);
-        GameObject gemTop = manager.GetGem(gemTopPosition);
-        if (gemTop != null && !gemTop.GetComponent<GemBehaviour>().usedForRootSearch)
+        GemBehaviour gemTopBehaviour = manager.GetGem(gemTopPosition)?.GetComponent<GemBehaviour>();
+        if (gemTopBehaviour != null && !gemTopBehaviour.usedForRootSearch)
         {
-            if (Search(gemTopPosition, ref subRootPath))
+            gemTopBehaviour.usedForRootSearch = true;
+            if (SearchFrom(gemTopPosition, ref subRootPath))
             {
                 rootPath += subRootPath;
                 hasRootPath = true;
                 return;
             }
+            subRootPath = "";
         }
         bool isEvenRow = (positionInList.y + 1) % 2 == 0;
         Vector2Int gemTopSidePosition = new Vector2Int(isEvenRow ? positionInList.x - 1 : positionInList.x + 1, positionInList.y - 1);
-        GameObject gemSideTop = manager.GetGem(gemTopSidePosition);
-        if (gemSideTop != null && !gemSideTop.GetComponent<GemBehaviour>().usedForRootSearch)
+        GemBehaviour gemTopSideBehaviour = manager.GetGem(gemTopSidePosition)?.GetComponent<GemBehaviour>();
+        if (gemTopSideBehaviour != null && !gemTopSideBehaviour.usedForRootSearch)
         {
-            if (Search(gemTopSidePosition, ref subRootPath))
+            gemTopSideBehaviour.usedForRootSearch = true;
+            if (SearchFrom(gemTopSidePosition, ref subRootPath))
             {
                 rootPath += subRootPath;
                 hasRootPath = true;
                 return;
             }
+            subRootPath = "";
         }
         Vector2Int gemBotPosition = new Vector2Int(positionInList.x, positionInList.y + 1);
-        GameObject gemBot = manager.GetGem(gemBotPosition);
-        if (gemBot != null && !gemBot.GetComponent<GemBehaviour>().usedForRootSearch)
+        GemBehaviour gemBotBehaviour = manager.GetGem(gemBotPosition)?.GetComponent<GemBehaviour>();
+        if (gemBotBehaviour != null && !gemBotBehaviour.usedForRootSearch)
         {
-            if (Search(gemBotPosition, ref subRootPath))
+            gemBotBehaviour.usedForRootSearch = true;
+            if (SearchFrom(gemBotPosition, ref subRootPath))
             {
                 rootPath += subRootPath;
                 hasRootPath = true;
                 return;
             }
+            subRootPath = "";
         }
         Vector2Int gemBotSidePosition = new Vector2Int(positionInList.x + 1, positionInList.y + 1);
-        GameObject gemBotSide = manager.GetGem(gemBotSidePosition);
-        if (gemBotSide != null && !gemBotSide.GetComponent<GemBehaviour>().usedForRootSearch)
+        GemBehaviour gemBotSideBehaviour = manager.GetGem(gemBotSidePosition)?.GetComponent<GemBehaviour>();
+        if (gemBotSideBehaviour != null && !gemBotSideBehaviour.usedForRootSearch)
         {
-            if (Search(gemTopSidePosition, ref subRootPath))
+            gemBotSideBehaviour.usedForRootSearch = true;
+            if (SearchFrom(gemBotSidePosition, ref subRootPath))
             {
                 rootPath += subRootPath;
                 hasRootPath = true;
                 return;
             }
+            subRootPath = "";
         }
         Vector2Int gemLeftPosition = new Vector2Int(positionInList.x - 1, positionInList.y);
-        GameObject gemLeft = manager.GetGem(gemLeftPosition);
-        if (gemLeft != null && !gemLeft.GetComponent<GemBehaviour>().usedForRootSearch)
+        GemBehaviour gemLeftBehaviour = manager.GetGem(gemLeftPosition)?.GetComponent<GemBehaviour>();
+        if (gemLeftBehaviour != null && !gemLeftBehaviour.usedForRootSearch)
         {
-            if (Search(gemLeftPosition, ref subRootPath))
+            gemLeftBehaviour.usedForRootSearch = true;
+            if (SearchFrom(gemLeftPosition, ref subRootPath))
             {
                 rootPath += subRootPath;
                 hasRootPath = true;
                 return;
             }
+            subRootPath = "";
         }
         Vector2Int gemRightPosition = new Vector2Int(positionInList.x + 1, positionInList.y);
-        GameObject gemRight = manager.GetGem(gemRightPosition);
-        if (gemRight != null && !gemRight.GetComponent<GemBehaviour>().usedForRootSearch)
+        GemBehaviour gemRightBehaviour = manager.GetGem(gemRightPosition)?.GetComponent<GemBehaviour>();
+        if (gemRightBehaviour != null && !gemRightBehaviour.usedForRootSearch)
         {
-            if (Search(gemRightPosition, ref subRootPath))
+            gemRightBehaviour.usedForRootSearch = true;
+            if (SearchFrom(gemRightPosition, ref subRootPath))
             {
                 rootPath += subRootPath;
                 hasRootPath = true;
                 return;
             }
+            subRootPath = "";
         }
     }
 
-    private bool Search (Vector2Int fromPos, ref string subRootPath)
+    private bool SearchFrom (Vector2Int fromPos, ref string subRootPath)
     {
+        subRootPath += $",{fromPos.x}:{fromPos.y}";
+
+        if (fromPos.y == 0) return true;
+
+        Vector2Int gemTopPosition = new Vector2Int(fromPos.x, fromPos.y - 1);
+        GemBehaviour gemTopBehaviour = manager.GetGem(gemTopPosition)?.GetComponent<GemBehaviour>();
+        if (gemTopBehaviour != null && !gemTopBehaviour.usedForRootSearch)
+        {
+            gemTopBehaviour.usedForRootSearch = true;
+            return (SearchFrom(gemTopPosition, ref subRootPath));
+        }
+        bool isEvenRow = (fromPos.y + 1) % 2 == 0;
+        Vector2Int gemTopSidePosition = new Vector2Int(isEvenRow ? fromPos.x - 1 : fromPos.x + 1, fromPos.y - 1);
+        GemBehaviour gemSideTopBehaviour = manager.GetGem(gemTopSidePosition)?.GetComponent<GemBehaviour>();
+        if (gemSideTopBehaviour != null && !gemSideTopBehaviour.usedForRootSearch)
+        {
+            gemSideTopBehaviour.usedForRootSearch = true;
+            return SearchFrom(gemTopSidePosition, ref subRootPath);
+        }
+        Vector2Int gemBotPosition = new Vector2Int(fromPos.x, fromPos.y + 1);
+        GemBehaviour gemBotBehaviour = manager.GetGem(gemBotPosition)?.GetComponent<GemBehaviour>();
+        if (gemBotBehaviour != null && !gemBotBehaviour.usedForRootSearch)
+        {
+            gemBotBehaviour.usedForRootSearch = true;
+            return SearchFrom(gemBotPosition, ref subRootPath);
+        }
+        Vector2Int gemBotSidePosition = new Vector2Int(fromPos.x + 1, fromPos.y + 1);
+        GemBehaviour gemBotSideBehaviour = manager.GetGem(gemBotSidePosition)?.GetComponent<GemBehaviour>();
+        if (gemBotSideBehaviour != null && !gemBotSideBehaviour.usedForRootSearch)
+        {
+            gemBotSideBehaviour.usedForRootSearch = true;
+            return SearchFrom(gemBotSidePosition, ref subRootPath);
+        }
+        Vector2Int gemLeftPosition = new Vector2Int(fromPos.x - 1, fromPos.y);
+        GemBehaviour gemLeftBehaviour = manager.GetGem(gemLeftPosition)?.GetComponent<GemBehaviour>();
+        if (gemLeftBehaviour != null && !gemLeftBehaviour.usedForRootSearch)
+        {
+            gemLeftBehaviour.usedForRootSearch = true;
+            return SearchFrom(gemLeftPosition, ref subRootPath);
+        }
+        Vector2Int gemRightPosition = new Vector2Int(fromPos.x + 1, fromPos.y);
+        GemBehaviour gemRightBehaviour = manager.GetGem(gemRightPosition)?.GetComponent<GemBehaviour>();
+        if (gemRightBehaviour != null && !gemRightBehaviour.usedForRootSearch)
+        {
+            gemRightBehaviour.usedForRootSearch = true;
+            return SearchFrom(gemRightPosition, ref subRootPath);
+        }
         return false;
     }
 
