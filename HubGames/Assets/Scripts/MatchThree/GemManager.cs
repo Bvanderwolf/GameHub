@@ -46,7 +46,7 @@ public class GemManager : MonoBehaviour
 
         float gemYSpawnOffset = Camera.main.orthographicSize - (gemHalfHeight * rows);
 
-        totalWidthHalf = gemHalfWidth * MAX_START_GEMS_PER_ROW * 0.5f;
+        totalWidthHalf = gemHalfWidth * MAX_START_GEMS_PER_ROW * 0.495f;
 
         /*To make the gems start spawning on the left top of the screen we set the y axis start
          to the camera size minus combined height of gems halfed adding the position for a gem
@@ -108,7 +108,7 @@ public class GemManager : MonoBehaviour
             GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
             return behaviour != null && behaviour.exploding && !behaviour.exploded;
         }));
-        Debug.Log(anyGemsAreExploding);
+
         //if there are no gems left that are exploding but not fully we can count them and see if they can be removed
         if (!anyGemsAreExploding)
         {
@@ -257,8 +257,26 @@ public class GemManager : MonoBehaviour
         }
 
         //we make sure the recruitPos is not out of bounds *Problem: exceptions override other gems which isnt intended
-        if (recruitPosX < 0) recruitPosX = 0;
-        if (recruitPosX >= GemSockets[recruitPosY].Count) recruitPosX = GemSockets[recruitPosY].Count - 1;
+        if (recruitPosX < 0)
+        {
+            Debug.Log("test1");
+            if (!RelativePositions.TOP(side))
+            {
+                recruitPosY++;
+                if (recruitPosY == GemSockets.Count) AddNullRowToGemList();
+            }
+            recruitPosX = 0;
+        }
+        else if (recruitPosX >= GemSockets[recruitPosY].Count)
+        {
+            Debug.Log("test2");
+            if (!RelativePositions.TOP(side))
+            {
+                recruitPosY++;
+                if (recruitPosY == GemSockets.Count) AddNullRowToGemList();
+            }
+            recruitPosX = GemSockets[recruitPosY].Count - 1;
+        }
 
         //set position of gem to a socketposition, set parent to this transform and start observing for exploding gems
         socketPos = GemSockets[recruitPosY][recruitPosX].pos;
