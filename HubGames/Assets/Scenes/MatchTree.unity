@@ -759,7 +759,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gemPrefab: {fileID: 1259828472117265739, guid: f1ab0d7e0c9257c4dbfde2e873772e26,
     type: 3}
-  topBound: {fileID: 1360612200}
   rows: 4
 --- !u!1 &1203149015
 GameObject:
@@ -903,7 +902,7 @@ GameObject:
   - component: {fileID: 1360612201}
   m_Layer: 0
   m_Name: Top
-  m_TagString: Untagged
+  m_TagString: Bound
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -932,7 +931,7 @@ BoxCollider2D:
   m_Enabled: 1
   m_Density: 1
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}

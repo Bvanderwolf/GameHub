@@ -7,7 +7,6 @@ using Random = UnityEngine.Random;
 public class GemManager : MonoBehaviour
 {
     [SerializeField] private GameObject gemPrefab;
-    [SerializeField] private Transform topBound;
     [SerializeField] private int rows;
 
     public int Rows => rows;
@@ -109,7 +108,7 @@ public class GemManager : MonoBehaviour
             GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
             return behaviour != null && behaviour.exploding && !behaviour.exploded;
         }));
-
+        Debug.Log(anyGemsAreExploding);
         //if there are no gems left that are exploding but not fully we can count them and see if they can be removed
         if (!anyGemsAreExploding)
         {
@@ -311,6 +310,39 @@ public class GemManager : MonoBehaviour
                 return AddGemToList(gem, recruiter, RelativePositions.LEFTMIDDLE);
             }
         }
+    }
+
+    public void RecruitGemFromTopBound (GameObject gem)
+    {
+        //we get the gem socket closest to the impact and its position in the gemsocket list
+        float gemX = gem.transform.position.x;
+        float minX = GemSockets[0].Min((s) => Mathf.Abs(s.pos.x - gemX));
+        GemSocket closestSocket = GemSockets[0].Find((s) => Mathf.Abs(s.pos.x - gemX) == minX);
+        Vector2Int positionInList = new Vector2Int(GemSockets[0].IndexOf(closestSocket), 0);
+        //the the position is already held by another gem we place it left or right
+        if (GemSockets[positionInList.y][positionInList.x].gem != null)
+        {
+            if (gemX < closestSocket.pos.x)
+            {
+                if (GemSockets[positionInList.y][positionInList.x - 1].gem != null)
+                    positionInList = new Vector2Int(positionInList.y, positionInList.x - 1);
+                else
+                    positionInList = new Vector2Int(positionInList.y, positionInList.x + 1);
+            }
+            else
+            {
+                if (GemSockets[positionInList.y][positionInList.x + 1].gem != null)
+                    positionInList = new Vector2Int(positionInList.y, positionInList.x + 1);
+                else
+                    positionInList = new Vector2Int(positionInList.y, positionInList.x - 1);
+            }
+        }
+
+        GemSockets[positionInList.y][positionInList.x] = new GemSocket(gem, closestSocket.pos);
+        gem.transform.position = closestSocket.pos;
+        gem.transform.parent = transform;
+        gem.GetComponent<GemBehaviour>().initializeWithManager(this, positionInList);
+        StartObservingExplodingGems();
     }
 
     public void RemoveGemFromList (GemBehaviour behaviour)

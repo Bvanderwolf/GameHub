@@ -10,6 +10,7 @@ public class GemBehaviour : MonoBehaviour
     [SerializeField] private Vector2Int positionInList;
 
     public Vector2Int PositionInList => positionInList;
+
     public event Action<GemBehaviour> OnRootSearchFailed;
 
     private readonly float explodeDelay = 0.1f;
@@ -60,9 +61,9 @@ public class GemBehaviour : MonoBehaviour
     private void OnTriggerEnter2D (Collider2D collision)
     {
         //If a Gem gets into contact with another gem it attaches if not kinematic
-        if (collision.gameObject.tag == "Gem")
+        if (collision.tag == "Gem")
         {
-            if (!body.isKinematic) Attach(collision);
+            if (!body.isKinematic) AttachToGem(collision);
 
             //if the gem is exploding when getting into contact with another gem,
             //it makes the other gem explode if it has the same sprite
@@ -75,14 +76,29 @@ public class GemBehaviour : MonoBehaviour
                 }
             }
         }
+        else if (collision.tag == "Bound" && collision.name == "Top")
+        {
+            if (!body.isKinematic) AttachToTopBound();
+        }
     }
 
     //Sets up physics values for getting recruited, starts exploding and lets itself be recruited by given colliding gem
-    private void Attach (Collider2D collision)
+    private void AttachToGem (Collider2D collision)
     {
         SetDefaultPhysicsValues();
         StartCoroutine(StartExplode());
         collision.gameObject.GetComponent<GemBehaviour>().Recruit(this.gameObject);
+    }
+
+    private void AttachToTopBound ()
+    {
+        GemManager manager = FindObjectOfType<GemManager>();
+        if (manager != null)
+        {
+            SetDefaultPhysicsValues();
+            StartCoroutine(StartExplode());
+            manager.RecruitGemFromTopBound(this.gameObject);
+        }
     }
 
     //Tries creating root path based on position in list.
