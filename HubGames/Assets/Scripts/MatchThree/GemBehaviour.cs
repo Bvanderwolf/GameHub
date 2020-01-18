@@ -303,6 +303,7 @@ public class GemBehaviour : MonoBehaviour
             transform.position = new Vector2(transform.position.x, yPosition);
             yield return null;
         }
+        manager.RemoveGemFromList(this);
         Destroy(this.gameObject);
     }
 }

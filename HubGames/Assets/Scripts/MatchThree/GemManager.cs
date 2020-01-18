@@ -21,6 +21,9 @@ public class GemManager : MonoBehaviour
     private float totalWidthHalf;
     private float totalHeightHalf;
 
+    private bool observingFadingGems = false;
+    private bool observingExplodingGems = false;
+
     public readonly int MIN_EXPLODE_COUNT = 3;
     private readonly float MIDDLE_ATTACH_RANGE = 0.3f;
 
@@ -28,7 +31,7 @@ public class GemManager : MonoBehaviour
 
     public List<List<GemSocket>> GemSockets { get; } = new List<List<GemSocket>>();
 
-    public bool ObservingGems { get; private set; } = false;
+    public bool ObservingGems => observingExplodingGems || observingFadingGems;
 
     private void Awake ()
     {
@@ -90,18 +93,39 @@ public class GemManager : MonoBehaviour
 
     private void FixedUpdate ()
     {
-        //if there are gems exploding (defined by "explodingGems") we observe the gemsocket list
-        if (ObservingGems) ObserveExplodingGems();
+        //if there are gems exploding (defined by "observingGems") we observe the gemsocket list
+        if (ObservingGems)
+        {
+            ObserveExplodingGems();
+            ObserveFadingGems();
+        }
     }
 
-    private void StartObservingExplodingGems ()
+    private void StartObservingGems ()
     {
-        ObservingGems = true;
+        observingExplodingGems = true;
+    }
+
+    private void ObserveFadingGems ()
+    {
+        if (!observingFadingGems)
+            return;
+
+        bool anyGemsAreFading = GemSockets.Any((list) => list.Any((socket) =>
+        {
+            GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
+            return behaviour != null && behaviour.removingSelf;
+        }));
+
+        if (!anyGemsAreFading) observingFadingGems = false;
     }
 
     //looks at all gems in sockets and checks if all gems that are exploding are finished or not
     private void ObserveExplodingGems ()
     {
+        if (!observingExplodingGems)
+            return;
+
         //define whether there are still gems left that are exploding but haven't exploded fully
         bool anyGemsAreExploding = GemSockets.Any((list) => list.Any((socket) =>
         {
@@ -136,8 +160,6 @@ public class GemManager : MonoBehaviour
                         if (behaviour != null && behaviour.exploded)
                         {
                             behaviour.RemoveSelf(explodeCount);
-                            behaviour.OnRootSearchFailed -= RemoveGemFromList;
-                            list[i] = new GemSocket(null, behaviour.transform.position);
                             explodeCount--;
                         }
                     }
@@ -164,8 +186,9 @@ public class GemManager : MonoBehaviour
                 }));
             }
 
-            //we stop observing gems by setting "explodingGems" to false
-            ObservingGems = false;
+            //we stop observing exploding gems and start observing fading gems
+            observingExplodingGems = false;
+            observingFadingGems = true;
         }
     }
 
@@ -284,7 +307,7 @@ public class GemManager : MonoBehaviour
         gem.transform.position = socketPos;
         gem.transform.parent = transform;
 
-        StartObservingExplodingGems();
+        StartObservingGems();
 
         //Debug.Log($"recruitPos: {recruiterPos}\n recruitPosX: {recruitPosX}\n recruitPosY: {recruitPosY}\n side: {side}");
         return new Vector2Int(recruitPosX, recruitPosY);
@@ -360,7 +383,7 @@ public class GemManager : MonoBehaviour
         gem.transform.position = closestSocket.pos;
         gem.transform.parent = transform;
         gem.GetComponent<GemBehaviour>().initializeWithManager(this, positionInList);
-        StartObservingExplodingGems();
+        StartObservingGems();
     }
 
     public void RemoveGemFromList (GemBehaviour behaviour)
