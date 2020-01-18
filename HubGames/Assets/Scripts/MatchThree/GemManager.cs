@@ -13,8 +13,8 @@ public class GemManager : MonoBehaviour
 
     public readonly int MAX_START_GEMS_PER_ROW = 11;
     private readonly float GEM_MARGIN = 0.04f;
-    private static string[] gemNames = new string[] { "blue", "green", "red", "yellow" };
-    private static Dictionary<string, Sprite> gemSpriteDict = new Dictionary<string, Sprite>();
+    private string[] gemNames = new string[] { "blue", "green", "red", "yellow" };
+    private Dictionary<string, Sprite> gemSpriteDict = new Dictionary<string, Sprite>();
 
     private float gemHalfWidth;
     private float gemHalfHeight;
@@ -24,7 +24,8 @@ public class GemManager : MonoBehaviour
     private bool observingFadingGems = false;
     private bool observingExplodingGems = false;
 
-    public readonly int MIN_EXPLODE_COUNT = 3;
+    private readonly int MIN_EXPLODE_COUNT = 3;
+    private readonly int MAX_ROW_COUNT = 8;
     private readonly float MIDDLE_ATTACH_RANGE = 0.3f;
 
     public bool IsRootGem (GameObject gem) => GemSockets[0] != null && GemSockets[0].Any((socket) => socket.gem == gem);
@@ -32,6 +33,10 @@ public class GemManager : MonoBehaviour
     public List<List<GemSocket>> GemSockets { get; } = new List<List<GemSocket>>();
 
     public bool ObservingGems => observingExplodingGems || observingFadingGems;
+
+    public event Action OnAllGemsDestroyed;
+
+    public event Action OnMaxRowsReached;
 
     private void Awake ()
     {
@@ -98,6 +103,7 @@ public class GemManager : MonoBehaviour
         {
             ObserveExplodingGems();
             ObserveFadingGems();
+            ObserveGemCount();
         }
     }
 
@@ -106,18 +112,40 @@ public class GemManager : MonoBehaviour
         observingExplodingGems = true;
     }
 
+    //looks at the gems that are child of this gameobject and determines if the player has won based on it
+    private void ObserveGemCount ()
+    {
+        //to make sure we only check once we only check if both fading and exploding gems are done being observed
+        if (observingExplodingGems || observingFadingGems)
+            return;
+
+        if (transform.childCount == 0) OnAllGemsDestroyed();
+    }
+
+    //looks through gemsocket list for gems that are removing themselfs
     private void ObserveFadingGems ()
     {
         if (!observingFadingGems)
             return;
 
-        bool anyGemsAreFading = GemSockets.Any((list) => list.Any((socket) =>
+        if (!AnyGemsAreFading)
         {
-            GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
-            return behaviour != null && behaviour.removingSelf;
-        }));
+            //after gems have faded we need to check the correctness of the rootpath for each gem
+            //maybe removing some in the process because of no valid root path
+            for (int row = 0; row < GemSockets.Count; row++)
+            {
+                for (int col = 0; col < GemSockets[row].Count; col++)
+                {
+                    GemBehaviour behaviour = GemSockets[row][col].gem?.GetComponent<GemBehaviour>();
+                    if (behaviour != null) behaviour.CheckOnRootPath();
+                }
+            }
 
-        if (!anyGemsAreFading) observingFadingGems = false;
+            //if no gems are fading after the root check we can stop observing for fading gems
+            if (!AnyGemsAreFading)
+                observingFadingGems = false;
+        }
+        Debug.Log("fade observe");
     }
 
     //looks at all gems in sockets and checks if all gems that are exploding are finished or not
@@ -126,15 +154,8 @@ public class GemManager : MonoBehaviour
         if (!observingExplodingGems)
             return;
 
-        //define whether there are still gems left that are exploding but haven't exploded fully
-        bool anyGemsAreExploding = GemSockets.Any((list) => list.Any((socket) =>
-        {
-            GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
-            return behaviour != null && behaviour.exploding && !behaviour.exploded;
-        }));
-
         //if there are no gems left that are exploding but not fully we can count them and see if they can be removed
-        if (!anyGemsAreExploding)
+        if (!AnyGemsAreExploding)
         {
             //add all exploded gems toghether
             int explodeCount = 0;
@@ -164,17 +185,6 @@ public class GemManager : MonoBehaviour
                         }
                     }
                 }
-
-                //after removing the gems from the GemSocket list we need to check the correctness of the rootpath for each gem
-                //maybe removing some in the process because of no valid root path
-                for (int row = 0; row < GemSockets.Count; row++)
-                {
-                    for (int col = 0; col < GemSockets[row].Count; col++)
-                    {
-                        GemBehaviour behaviour = GemSockets[row][col].gem?.GetComponent<GemBehaviour>();
-                        if (behaviour != null) behaviour.CheckOnRootPath();
-                    }
-                }
             }
             else
             {
@@ -190,7 +200,21 @@ public class GemManager : MonoBehaviour
             observingExplodingGems = false;
             observingFadingGems = true;
         }
+        Debug.Log("explode observe");
     }
+
+    private bool AnyGemsAreFading => GemSockets.Any((list) => list.Any((socket) =>
+    {
+        GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
+        return behaviour != null && behaviour.removingSelf;
+    }));
+
+    //defines whether there are still gems left that are exploding but haven't exploded fully
+    private bool AnyGemsAreExploding => GemSockets.Any((list) => list.Any((socket) =>
+    {
+        GemBehaviour behaviour = socket.gem?.GetComponent<GemBehaviour>();
+        return behaviour != null && behaviour.exploding && !behaviour.exploded;
+    }));
 
     //adds a row to the gemsocket list with all GemSocket Wrappers theirs gameobject reference set to null.
     private void AddNullRowToGemList ()
@@ -208,6 +232,8 @@ public class GemManager : MonoBehaviour
         {
             GemSockets[GemSockets.Count - 1].Add(new GemSocket(null, new Vector2(x(row), y)));
         }
+        //if the max ammount of rows is reached the game state manager is informed
+        if (GemSockets.Count == MAX_ROW_COUNT) OnMaxRowsReached();
     }
 
     //returns position of gem in the GemSockets list in vector2int form.
@@ -389,8 +415,8 @@ public class GemManager : MonoBehaviour
     public void RemoveGemFromList (GemBehaviour behaviour)
     {
         behaviour.OnRootSearchFailed -= RemoveGemFromList;
-        Vector2 pos = behaviour.transform.position;
-        GemSockets[behaviour.PositionInList.y][behaviour.PositionInList.x] = new GemSocket(null, pos);
+        Vector2Int pos = behaviour.PositionInList;
+        GemSockets[pos.y][pos.x] = new GemSocket(null, GemSockets[pos.y][pos.x].pos);
     }
 
     /// <summary>
