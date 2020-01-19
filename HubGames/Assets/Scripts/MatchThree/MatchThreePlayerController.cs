@@ -35,9 +35,23 @@ public class MatchThreePlayerController : MonoBehaviour
         if (MatchThreeGameState.GameOver)
             return;
 
-        if (shootTimer != null)
-            shootTimer.Tick(Time.deltaTime);
+        TickShootTimer();
+        CheckForIndicatorRotation();
+        CheckForShootInput();
+        ClampIndicatorRotation();
+    }
 
+    private void ClampIndicatorRotation ()
+    {
+        Vector3 euler = indicator.transform.localEulerAngles;
+        euler.z = ClampAngle(euler.z, -MAXROTATION, MAXROTATION);
+        indicator.transform.localEulerAngles = euler;
+
+        indicator.transform.localPosition = ClampedPosition();
+    }
+
+    private void CheckForIndicatorRotation ()
+    {
         if (Input.GetKey(KeyCode.LeftArrow))
         {
             indicator.transform.RotateAround(pivot.transform.position, Vector3.forward, rotateSpeed * Time.deltaTime);
@@ -46,7 +60,11 @@ public class MatchThreePlayerController : MonoBehaviour
         {
             indicator.transform.RotateAround(pivot.transform.position, Vector3.forward, -(rotateSpeed * Time.deltaTime));
         }
+        //Debug.DrawRay(indicator.transform.position, indicator.transform.up, Color.red);
+    }
 
+    private void CheckForShootInput ()
+    {
         if (Input.GetKeyDown(KeyCode.Space) && shootTimerFinished && !gemManager.ObservingGems)
         {
             GameObject gem = Instantiate(gemPrefab, pivot.transform.position, Quaternion.identity);
@@ -64,14 +82,12 @@ public class MatchThreePlayerController : MonoBehaviour
                 shootTimer = new Timer(SHOOTDELAY, () => shootTimerFinished = true);
             }
         }
+    }
 
-        //Debug.DrawRay(indicator.transform.position, indicator.transform.up, Color.red);
-
-        Vector3 euler = indicator.transform.localEulerAngles;
-        euler.z = ClampAngle(euler.z, -MAXROTATION, MAXROTATION);
-        indicator.transform.localEulerAngles = euler;
-
-        indicator.transform.localPosition = ClampedPosition();
+    private void TickShootTimer ()
+    {
+        if (shootTimer != null)
+            shootTimer.Tick(Time.deltaTime);
     }
 
     private float ClampAngle (float angle, float from, float to)
