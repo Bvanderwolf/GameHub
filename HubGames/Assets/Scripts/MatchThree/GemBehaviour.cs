@@ -26,6 +26,9 @@ public class GemBehaviour : MonoBehaviour
 
     private CircleCollider2D circleCollider;
     private Rigidbody2D body;
+    private AudioClip hitSound;
+    private AudioSource audioSource;
+
     private readonly float explodeRadius = 4.5f;
     private readonly float circleRadius = 2.6f;
     private readonly float fallYOffset = 1.5f;
@@ -37,6 +40,12 @@ public class GemBehaviour : MonoBehaviour
         spriteRend = GetComponent<SpriteRenderer>();
         circleCollider = GetComponent<CircleCollider2D>();
         body = GetComponent<Rigidbody2D>();
+        audioSource = GetComponent<AudioSource>();
+    }
+
+    private void Start ()
+    {
+        hitSound = ResourceManager.GetResource<AudioClip>("ballHit");
     }
 
     //sets up gem by getting manager reference, position, attaching OnRootSerachFailed event and creating root path
@@ -56,6 +65,11 @@ public class GemBehaviour : MonoBehaviour
                 manager,
                 manager.RecruitGem(recruitedGem, this.gameObject));
         }
+    }
+
+    private void OnCollisionEnter2D (Collision2D collision)
+    {
+        audioSource.PlayOneShot(hitSound);
     }
 
     private void OnTriggerEnter2D (Collider2D collision)
@@ -279,13 +293,15 @@ public class GemBehaviour : MonoBehaviour
     //start FadeToDestroy courotine to remove itself based on given position In Exploding Gems sequence
     public void RemoveSelf (int positionInExplodingGems)
     {
-        removingSelf = true;
         StartCoroutine(FadingFallToDestroy(positionInExplodingGems * explodeDelay));
     }
 
     //linearly interpolates alpha value of image color from 1 to 0 and then destroys gameobject
     private IEnumerator FadingFallToDestroy (float delay)
     {
+        removingSelf = true;
+        audioSource.PlayOneShot(hitSound);
+
         yield return new WaitForSeconds(delay);
 
         float currentLerpTime = 0;

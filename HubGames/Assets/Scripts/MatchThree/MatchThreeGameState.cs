@@ -7,12 +7,20 @@ public class MatchThreeGameState : MonoBehaviour
 
     public event Action OnGameOver;
 
+    private AudioClip endingSound;
+    private AudioSource audioSource;
+
     private void Awake ()
     {
         ResourceManager.AddResource<Sprite>("gemBlue", "MatchThree/gemBlue", HubGames.MATCHTHREE);
         ResourceManager.AddResource<Sprite>("gemGreen", "MatchThree/gemGreen", HubGames.MATCHTHREE);
         ResourceManager.AddResource<Sprite>("gemRed", "MatchThree/gemRed", HubGames.MATCHTHREE);
         ResourceManager.AddResource<Sprite>("gemYellow", "MatchThree/gemYellow", HubGames.MATCHTHREE);
+        //for match three we use the same audioclips as for breakout
+        ResourceManager.AddResource<AudioClip>("breakoutEnding", "Breakout/breakoutEnd", HubGames.BREAKOUT);
+        ResourceManager.AddResource<AudioClip>("ballHit", "Breakout/ball_hit", HubGames.BREAKOUT);
+
+        audioSource = GetComponent<AudioSource>();
     }
 
     private void Start ()
@@ -25,6 +33,7 @@ public class MatchThreeGameState : MonoBehaviour
         {
             InputSystem.Instance.OnGameRestartInput += OnRestart;
         }
+        endingSound = ResourceManager.GetResource<AudioClip>("breakoutEnding");
     }
 
     private void OnRestart ()
@@ -35,14 +44,19 @@ public class MatchThreeGameState : MonoBehaviour
     private void OnLoseEndState ()
     {
         Debug.Log("Lost game!");
-        GameOver = true;
-        OnGameOver();
+        SetGameOver();
     }
 
     private void OnWinEndState ()
     {
         Debug.Log("won game!");
+        SetGameOver();
+    }
+
+    private void SetGameOver ()
+    {
         GameOver = true;
+        audioSource.PlayOneShot(endingSound);
         OnGameOver();
     }
 
