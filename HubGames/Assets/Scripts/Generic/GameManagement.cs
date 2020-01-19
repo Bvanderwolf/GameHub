@@ -76,11 +76,8 @@ public class GameManagement : MonoBehaviour
 
     private void SetScreenSetings ()
     {
-        if (Screen.fullScreen)
-        {
-            PlayerPrefs.SetInt("Screenmanager Resolution Width", 500);
-            PlayerPrefs.SetInt("Screenmanager Resolution Height", 500);
-            PlayerPrefs.SetInt("Screenmanager Is Fullscreen mode", 0);
-        }
+        PlayerPrefs.SetInt("Screenmanager Resolution Width", 1000);
+        PlayerPrefs.SetInt("Screenmanager Resolution Height", 1000);
+        PlayerPrefs.SetInt("Screenmanager Is Fullscreen mode", 0);
     }
 }
