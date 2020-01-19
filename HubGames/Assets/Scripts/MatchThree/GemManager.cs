@@ -49,6 +49,33 @@ public class GemManager : MonoBehaviour
     // Start is called before the first frame update
     private void Start ()
     {
+        if (InputSystem.Instance != null)
+        {
+            InputSystem.Instance.OnGameRestartInput += OnRestart;
+        }
+    }
+
+    private void OnRestart ()
+    {
+        //if on restart there are still gems in the scene we delete them
+        if (transform.childCount != 0)
+        {
+            for (int row = 0; row < GemSockets.Count; row++)
+            {
+                for (int col = 0; col < GemSockets[row].Count; col++)
+                {
+                    if (GemSockets[row][col].gem != null)
+                        Destroy(GemSockets[row][col].gem);
+                }
+            }
+        }
+        //we clear the gemsockets list and then build it up again
+        GemSockets.Clear();
+        BuildGemList();
+    }
+
+    private void BuildGemList ()
+    {
         gemHalfWidth = gemPrefab.GetComponent<SpriteRenderer>().size.x * gemPrefab.transform.localScale.x;
         gemHalfHeight = gemPrefab.GetComponent<SpriteRenderer>().size.y * gemPrefab.transform.localScale.y;
 
@@ -145,7 +172,6 @@ public class GemManager : MonoBehaviour
             if (!AnyGemsAreFading)
                 observingFadingGems = false;
         }
-        Debug.Log("fade observe");
     }
 
     //looks at all gems in sockets and checks if all gems that are exploding are finished or not
@@ -200,7 +226,6 @@ public class GemManager : MonoBehaviour
             observingExplodingGems = false;
             observingFadingGems = true;
         }
-        Debug.Log("explode observe");
     }
 
     private bool AnyGemsAreFading => GemSockets.Any((list) => list.Any((socket) =>
@@ -436,5 +461,13 @@ public class GemManager : MonoBehaviour
             return GemSockets[position.y][position.x].gem;
         }
         else return null;
+    }
+
+    private void OnDestroy ()
+    {
+        if (InputSystem.Instance != null)
+        {
+            InputSystem.Instance.OnGameRestartInput -= OnRestart;
+        }
     }
 }

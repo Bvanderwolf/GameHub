@@ -16,7 +16,6 @@ public class MatchThreePlayerController : MonoBehaviour
     private readonly Vector3 maxPosition = new Vector3(0.9425f, 0.6658f, 0);
 
     private Timer shootTimer;
-    private bool CanShoot => shootTimerFinished && !MatchThreeGameState.GameOver;
     private bool shootTimerFinished = true;
 
     private GemManager gemManager;
@@ -48,7 +47,7 @@ public class MatchThreePlayerController : MonoBehaviour
             indicator.transform.RotateAround(pivot.transform.position, Vector3.forward, -(rotateSpeed * Time.deltaTime));
         }
 
-        if (Input.GetKeyDown(KeyCode.Space) && CanShoot && !gemManager.ObservingGems)
+        if (Input.GetKeyDown(KeyCode.Space) && shootTimerFinished && !gemManager.ObservingGems)
         {
             GameObject gem = Instantiate(gemPrefab, pivot.transform.position, Quaternion.identity);
             gem.GetComponent<SpriteRenderer>().sprite = gemHolderRend.sprite;
