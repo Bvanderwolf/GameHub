@@ -10,6 +10,7 @@ ScriptsOnlyBuild:
     - GameManagement
     - GemBehaviour
     - GemManager
+    - HubUI
     - InputSystem
     - MatchThreeGameState
     - MatchThreePlayerController
@@ -149,11 +150,15 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 10650}
     - Class: 114
+      Script: {instanceID: 10670}
+    - Class: 114
       Script: {instanceID: 11130}
     - Class: 114
       Script: {instanceID: 11334}
     - Class: 114
       Script: {instanceID: 11508}
+    - Class: 114
+      Script: {instanceID: 13570}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -167,6 +172,10 @@ ScriptsOnlyBuild:
     - Class: 223
       Script: {instanceID: 0}
     - Class: 224
+      Script: {instanceID: 0}
+    - Class: 328
+      Script: {instanceID: 0}
+    - Class: 329
       Script: {instanceID: 0}
     Assets/Scenes/MatchTree.unity:
     - Class: 1
@@ -890,6 +899,12 @@ ScriptsOnlyBuild:
     assemblyName: Unity.Timeline.dll
     namespaceName: UnityEngine.Timeline
     className: PlayableTrack
+  - hash:
+      serializedVersion: 2
+      Hash: b4e04154dd0453fa84b3d1b0b2addff8
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: HubUI
   platform: 5
   scenePathNames:
   - Assets/Scenes/Hub.unity

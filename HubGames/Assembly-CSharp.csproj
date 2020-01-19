@@ -74,6 +74,7 @@
     <Compile Include="Assets\Scripts\Generic\Timer.cs" />
     <Compile Include="Assets\Scripts\Generic\TimerManager.cs" />
     <Compile Include="Assets\Scripts\Generic\UISystem.cs" />
+    <Compile Include="Assets\Scripts\Hub\HubUI.cs" />
     <Compile Include="Assets\Scripts\MatchThree\GemBehaviour.cs" />
     <Compile Include="Assets\Scripts\MatchThree\GemManager.cs" />
     <Compile Include="Assets\Scripts\MatchThree\GemSocket.cs" />
