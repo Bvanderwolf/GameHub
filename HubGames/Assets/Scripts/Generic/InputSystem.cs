@@ -43,7 +43,6 @@ public class InputSystem : MonoBehaviour
             Instance = this;
         }
 
-        HookUpLoadFunctionsFromUI();
         DontDestroyOnLoad(this.gameObject);
     }
 
@@ -52,7 +51,9 @@ public class InputSystem : MonoBehaviour
         if (Instance == this)
         {
             GameManagement.Instance.OnLoadHubStart += OnLoadHubStart;
+            UISystem.Instance.OnUIReInitialized += HookUpLoadFunctionsFromUI;
         }
+        HookUpLoadFunctionsFromUI();
     }
 
     private void OnLoadHubStart ()
@@ -117,7 +118,7 @@ public class InputSystem : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            GameManagement.Instance.TryEndHubGame();
+            GameManagement.Instance.ResolveEscapePress();
         }
 
         for (int i = 0; i < directionKeys.Count; i++)

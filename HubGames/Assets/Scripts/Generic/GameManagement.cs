@@ -26,9 +26,6 @@ public class GameManagement : MonoBehaviour
             Instance = this;
         }
 
-        //set screen settings for small screen
-        SetScreenSetings();
-
         DontDestroyOnLoad(this.gameObject);
     }
 
@@ -46,12 +43,17 @@ public class GameManagement : MonoBehaviour
         }
     }
 
-    public void TryEndHubGame ()
+    public void ResolveEscapePress ()
     {
         if (hubGamePlaying != HubGames.NONE)
         {
+            hubGamePlaying = HubGames.NONE;
             OnLoadHubStart?.Invoke();
-            SceneManager.LoadScene(hubDict[HubGames.NONE]);
+            SceneManager.LoadScene(hubDict[hubGamePlaying]);
+        }
+        else
+        {
+            FindObjectOfType<HubUI>().ShowOrHideResolutionButtons();
         }
     }
 
@@ -72,12 +74,5 @@ public class GameManagement : MonoBehaviour
     {
         SceneManager.LoadScene(hubDict[toHubgame]);
         hubGamePlaying = toHubgame;
-    }
-
-    private void SetScreenSetings ()
-    {
-        PlayerPrefs.SetInt("Screenmanager Resolution Width", 1000);
-        PlayerPrefs.SetInt("Screenmanager Resolution Height", 1000);
-        PlayerPrefs.SetInt("Screenmanager Is Fullscreen mode", 0);
     }
 }

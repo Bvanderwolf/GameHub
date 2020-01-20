@@ -1,16 +1,23 @@
 ﻿using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class UISystem : MonoBehaviour
 {
     public static UISystem Instance { get; private set; }
 
+    [SerializeField] private GameObject hubCanvasPrefab;
+    [SerializeField] private GameObject hubCanvas;
+
     [SerializeField] private float scaleSpeed;
+
     [SerializeField] private float fadeSpeed;
 
     public event Action OnUISystemRestartEvent;
+
+    public event Action OnUIReInitialized;
 
     private void Awake ()
     {
@@ -23,6 +30,8 @@ public class UISystem : MonoBehaviour
             Instance = this;
         }
 
+        hubCanvas = Instantiate(hubCanvasPrefab);
+
         DontDestroyOnLoad(this.gameObject);
     }
 
@@ -33,12 +42,28 @@ public class UISystem : MonoBehaviour
             //hook up OnGameOver function to GridSystem event
             InputSystem.Instance.OnGameRestartInput += OnUISystemRestart;
             GameManagement.Instance.OnLoadHubStart += OnLoadHubStart;
+            HubSettings.Instance.OnScreenChanged += OnScreenChange;
         }
+    }
+
+    private void OnScreenChange ()
+    {
+        Destroy(hubCanvas);
+        hubCanvas = null;
+        hubCanvas = Instantiate(hubCanvasPrefab);
+
+        OnUIReInitialized();
     }
 
     private void OnLoadHubStart ()
     {
         StopAllCoroutines();
+        SceneManager.sceneLoaded += OnHubLoaded;
+    }
+
+    private void OnHubLoaded (Scene scene, LoadSceneMode mode)
+    {
+        hubCanvas = FindObjectOfType<Canvas>().gameObject;
     }
 
     private void OnUISystemRestart ()
