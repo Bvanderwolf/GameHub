@@ -13,6 +13,9 @@ public class SnakeUI : MonoBehaviour
     {
         InputSystem.Instance.OnGameRestartInput += OnRestart;
         SnakeGrid.OnGridCollision += OnGameOver;
+
+        float startGameTextScale = startGameText.transform.localScale.x * HubSettings.Instance.ScreenRatio.x;
+        UISystem.Instance.ScaleText(startGameText, startGameTextScale);
     }
 
     private void OnDestroy ()

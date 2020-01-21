@@ -61,21 +61,13 @@ public class HubUI : MonoBehaviour
 
             GameObject text = rectTF.GetChild(0).gameObject;
             float textScale = text.GetComponent<RectTransform>().localScale.x * HubSettings.Instance.ScreenRatio.x;
-            ScaleText(text, textScale);
+            UISystem.Instance.ScaleText(text, textScale);
         }
         RectTransform rectTFTitleText = resolutionText.GetComponent<RectTransform>();
         float titleYPos = rectTFTitleText.anchoredPosition.y * HubSettings.Instance.ScreenRatio.y;
         float titleScale = rectTFTitleText.localScale.x * HubSettings.Instance.ScreenRatio.x;
         rectTFTitleText.anchoredPosition = new Vector2(rectTFTitleText.anchoredPosition.x, titleYPos);
-        ScaleText(resolutionText, titleScale);
-    }
-
-    private void ScaleText (GameObject text, float scale)
-    {
-        RectTransform rectTF = text.GetComponent<RectTransform>();
-        rectTF.sizeDelta = new Vector2(rectTF.sizeDelta.x * scale, rectTF.sizeDelta.y * scale);
-        Text textComp = text.GetComponent<Text>();
-        textComp.fontSize = (int)(textComp.fontSize * scale);
+        UISystem.Instance.ScaleText(resolutionText, titleScale);
     }
 
     public void ShowOrHideResolutionButtons ()
@@ -112,7 +104,7 @@ public class HubUI : MonoBehaviour
 
         GameObject text = rectTF.GetChild(0).gameObject;
         float scale = text.GetComponent<RectTransform>().localScale.x * HubSettings.Instance.ScreenRatio.x;
-        ScaleText(text, scale);
+        UISystem.Instance.ScaleText(text, scale);
     }
 
     private IEnumerator ShowOrHideResolutionButton (GameObject button)

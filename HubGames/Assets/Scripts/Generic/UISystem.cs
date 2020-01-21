@@ -71,6 +71,14 @@ public class UISystem : MonoBehaviour
         OnUISystemRestartEvent?.Invoke();
     }
 
+    public void ScaleText (GameObject text, float scale)
+    {
+        RectTransform rectTF = text.GetComponent<RectTransform>();
+        rectTF.sizeDelta = new Vector2(rectTF.sizeDelta.x * scale, rectTF.sizeDelta.y * scale);
+        Text textComp = text.GetComponent<Text>();
+        textComp.fontSize = (int)(textComp.fontSize * scale);
+    }
+
     public void PopupText (GameObject textGo, string text = "", Action callback = null)
     {
         if (textGo)

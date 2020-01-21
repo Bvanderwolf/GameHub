@@ -48,6 +48,7 @@ public class SnakeController : MonoBehaviour
     {
         grid = instance;
         parts.Add(this.gameObject);
+        grid.SetWidthHeightOfPart(this.gameObject);
 
         int oneInFour = Random.Range(0, 5);
         transform.rotation = Quaternion.Euler(0, 0, 90 * oneInFour);
@@ -166,14 +167,22 @@ public class SnakeController : MonoBehaviour
         //if any of the parts (including the head) is on the same position as the target it means we collided with a snack
         if (parts.Any((go) => go.transform.position == grid.SnakeTargetPosition))
         {
-            //when we eat a snack a new part is added based on the direction the snake is going and an event is raised
-            Vector2Int lastPartPosition = grid.GetGridPosition(parts[parts.Count - 1].transform.position);
-            Vector2Int partGridPosition = lastPartPosition - gridDirection;
-            Vector2 partPosition = grid.GetGridPosition(ref partGridPosition);
-            parts.Add(Instantiate(part, partPosition, Quaternion.identity, grid.transform));
-            audioSource.PlayOneShot(eatSound);
-            OnTargetCollision?.Invoke();
+            AddPartToBody();
         }
+    }
+
+    private void AddPartToBody ()
+    {
+        //when we eat a snack a new part is added based on the direction the snake is going and an event is raised
+        Vector2Int lastPartPosition = grid.GetGridPosition(parts[parts.Count - 1].transform.position);
+        Vector2Int partGridPosition = lastPartPosition - gridDirection;
+        Vector2 partPosition = grid.GetGridPosition(ref partGridPosition);
+        GameObject partObj = Instantiate(part, partPosition, Quaternion.identity, grid.transform);
+
+        grid.SetWidthHeightOfPart(partObj);
+        parts.Add(partObj);
+        audioSource.PlayOneShot(eatSound);
+        OnTargetCollision?.Invoke();
     }
 
     private void CreateBody (SnakeGrid instance, Vector2Int _myPosition)
@@ -193,7 +202,9 @@ public class SnakeController : MonoBehaviour
         {
             Vector2Int partGridPosition = gridPosition + inverseGridDirection * (current + 1);
             Vector2 partPosition = instance.GetGridPosition(ref partGridPosition);
-            parts.Add(Instantiate(part, partPosition, Quaternion.identity, instance.gameObject.transform));
+            GameObject partObj = Instantiate(part, partPosition, Quaternion.identity, instance.gameObject.transform);
+            grid.SetWidthHeightOfPart(partObj);
+            parts.Add(partObj);
         }
     }
 }

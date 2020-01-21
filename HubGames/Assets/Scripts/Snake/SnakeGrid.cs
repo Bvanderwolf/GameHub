@@ -38,6 +38,13 @@ public class SnakeGrid : MonoBehaviour
     // Start is called before the first frame update
     private void Start ()
     {
+        BuildGrid();
+        SetWidthHeightOfPart(snakeTarget);
+        SnakeUI.OnCountDownEnd += OnStartSnakeGame;
+    }
+
+    private void BuildGrid ()
+    {
         int gridXY = Mathf.RoundToInt((float)gridSize / 2);
         gridPositions = new Vector2[gridXY, gridXY];
 
@@ -54,8 +61,16 @@ public class SnakeGrid : MonoBehaviour
                 gridPositions[x, y] = new Vector2(halfSizeX + x * cellSizeX, halfSizeY + y * cellSizeY);
             }
         }
+    }
 
-        SnakeUI.OnCountDownEnd += OnStartSnakeGame;
+    public void SetWidthHeightOfPart (GameObject part)
+    {
+        RectTransform rectTF = part.GetComponent<RectTransform>();
+        float xSize = rectTF.sizeDelta.x * HubSettings.Instance.ScreenRatio.x;
+        float ySize = rectTF.sizeDelta.y * HubSettings.Instance.ScreenRatio.y;
+        if (xSize > ySize) xSize = ySize;
+        else if (ySize > xSize) ySize = xSize;
+        rectTF.sizeDelta = new Vector2(xSize, ySize);
     }
 
     private void OnDestroy ()
