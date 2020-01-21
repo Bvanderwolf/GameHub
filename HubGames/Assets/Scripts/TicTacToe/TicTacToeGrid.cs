@@ -51,6 +51,19 @@ public class TicTacToeGrid : MonoBehaviour
     // Start is called before the first frame update
     private void Start ()
     {
+        BuildGrid();
+        SetWidthHeightOfImage();
+
+        tapSound = ResourceManager.GetResource<AudioClip>("place");
+        audioSource = GetComponent<AudioSource>();
+
+        //attach OncanvasClicked function to OnCanvasClicked event from input system
+        InputSystem.Instance.OnCanvasClicked += OnCanvasClicked;
+        InputSystem.Instance.OnGameRestartInput += OnGridSystemRestart;
+    }
+
+    private void BuildGrid ()
+    {
         //get grid layout group component reference and initialise cells array
         cells = new Vector2[GRIDSIZEXY, GRIDSIZEXY];
 
@@ -69,13 +82,16 @@ public class TicTacToeGrid : MonoBehaviour
                 cells[x, y] = new Vector2(canvasTF.anchoredPosition.x + cellStartPosX, canvasTF.anchoredPosition.y + cellStartPosY);
             }
         }
+    }
 
-        tapSound = ResourceManager.GetResource<AudioClip>("place");
-        audioSource = GetComponent<AudioSource>();
-
-        //attach OncanvasClicked function to OnCanvasClicked event from input system
-        InputSystem.Instance.OnCanvasClicked += OnCanvasClicked;
-        InputSystem.Instance.OnGameRestartInput += OnGridSystemRestart;
+    private void SetWidthHeightOfImage ()
+    {
+        RectTransform rectTF = image.GetComponent<RectTransform>();
+        float xSize = rectTF.sizeDelta.x * HubSettings.Instance.ScreenRatio.x;
+        float ySize = rectTF.sizeDelta.y * HubSettings.Instance.ScreenRatio.y;
+        if (xSize > ySize) xSize = ySize;
+        else if (ySize > xSize) ySize = xSize;
+        rectTF.sizeDelta = new Vector2(xSize, ySize);
     }
 
     private void OnDestroy ()

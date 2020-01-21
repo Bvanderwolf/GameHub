@@ -20,6 +20,14 @@ public class TicTacToeCanvas : MonoBehaviour
         UISystem.Instance.OnUISystemRestartEvent += OnRestart;
         TicTacToeGrid.OnGameOver += OnGameOver;
         TicTacToeGameState.OnTurnEnd += StartPlayerPlayingTextPopup;
+
+        ScaleUIText();
+    }
+
+    private void ScaleUIText ()
+    {
+        UISystem.Instance.ScaleText(playerPlayingText, HubSettings.Instance.ScreenRatio.x);
+        UISystem.Instance.ScaleText(gameOverText, HubSettings.Instance.ScreenRatio.x);
     }
 
     private void OnDestroy ()
