@@ -389,6 +389,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hubCanvasPrefab: {fileID: 5271141636951276289, guid: 99d2d924d16a0544093192f913c8a043,
     type: 3}
+  hubCanvas: {fileID: 0}
   scaleSpeed: 1.5
   fadeSpeed: 1.5
 --- !u!4 &1876099460

@@ -24,6 +24,9 @@ public class SnakeController : MonoBehaviour
 
     private const float MOVEDELAY = 0.2f;
 
+    private readonly string defaultMoveAnimName = "partmove500x500";
+    private int partAnimIndex;
+
     public int StartPartCount
     {
         get
@@ -54,6 +57,7 @@ public class SnakeController : MonoBehaviour
         transform.rotation = Quaternion.Euler(0, 0, 90 * oneInFour);
 
         eatSound = ResourceManager.GetResource<AudioClip>("snakeEat");
+        partAnimIndex = GetDefaultPartAnimationClipIndex();
 
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
@@ -65,6 +69,25 @@ public class SnakeController : MonoBehaviour
 
         CreateBody(instance, _myPosition);
         StartCoroutine(MoveEnumerator());
+    }
+
+    private void SetAnimationClipValues (Animator animator)
+    {
+        AnimatorOverrideController aoc = new AnimatorOverrideController(animator.runtimeAnimatorController);
+        aoc[defaultMoveAnimName] = animator.runtimeAnimatorController.animationClips[partAnimIndex];
+        animator.runtimeAnimatorController = aoc;
+    }
+
+    private int GetDefaultPartAnimationClipIndex ()
+    {
+        string resolution = $"{Screen.width}x{Screen.height}";
+        switch (resolution)
+        {
+            case "500x500": return 0;
+            case "1000x1000": return 1;
+            case "1920x1080": return 2;
+            default: return -1;
+        }
     }
 
     private void OnDestroy ()
@@ -167,11 +190,11 @@ public class SnakeController : MonoBehaviour
         //if any of the parts (including the head) is on the same position as the target it means we collided with a snack
         if (parts.Any((go) => go.transform.position == grid.SnakeTargetPosition))
         {
-            AddPartToBody();
+            EatSnack();
         }
     }
 
-    private void AddPartToBody ()
+    private void EatSnack ()
     {
         //when we eat a snack a new part is added based on the direction the snake is going and an event is raised
         Vector2Int lastPartPosition = grid.GetGridPosition(parts[parts.Count - 1].transform.position);
@@ -180,6 +203,7 @@ public class SnakeController : MonoBehaviour
         GameObject partObj = Instantiate(part, partPosition, Quaternion.identity, grid.transform);
 
         grid.SetWidthHeightOfPart(partObj);
+        SetAnimationClipValues(partObj.GetComponent<Animator>());
         parts.Add(partObj);
         audioSource.PlayOneShot(eatSound);
         OnTargetCollision?.Invoke();
@@ -204,6 +228,7 @@ public class SnakeController : MonoBehaviour
             Vector2 partPosition = instance.GetGridPosition(ref partGridPosition);
             GameObject partObj = Instantiate(part, partPosition, Quaternion.identity, instance.gameObject.transform);
             grid.SetWidthHeightOfPart(partObj);
+            SetAnimationClipValues(partObj.GetComponent<Animator>());
             parts.Add(partObj);
         }
     }
