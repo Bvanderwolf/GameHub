@@ -38,7 +38,6 @@ public class GameManagement : MonoBehaviour
             {
                 hubDict.Add(hubGameTypes[i], i);
             }
-            ResourceManager.GiveKnownHubGames(hubGameTypes);
             InputSystem.Instance.OnButtonPress += OnButtonPress;
         }
     }

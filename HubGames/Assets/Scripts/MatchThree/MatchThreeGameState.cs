@@ -17,8 +17,6 @@ public class MatchThreeGameState : MonoBehaviour
         ResourceManager.AddResource<Sprite>("gemRed", "MatchThree/gemRed", HubGames.MATCHTHREE);
         ResourceManager.AddResource<Sprite>("gemYellow", "MatchThree/gemYellow", HubGames.MATCHTHREE);
         //for match three we use the same audioclips as for breakout
-        ResourceManager.AddResource<AudioClip>("breakoutEnding", "Breakout/breakoutEnd", HubGames.BREAKOUT);
-        ResourceManager.AddResource<AudioClip>("ballHit", "Breakout/ball_hit", HubGames.BREAKOUT);
 
         audioSource = GetComponent<AudioSource>();
     }

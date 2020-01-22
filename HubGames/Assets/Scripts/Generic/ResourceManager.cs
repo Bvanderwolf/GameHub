@@ -41,28 +41,10 @@ public class ResourceManager
 
     private static ResourceDictionary resourceDict = new ResourceDictionary();
 
-    private static Dictionary<HubGames, bool> knownHubGames = new Dictionary<HubGames, bool>();
-
-    public static void GiveKnownHubGames (HubGames[] hubgames)
-    {
-        foreach (HubGames hubgame in hubgames)
-        {
-            knownHubGames.Add(hubgame, false);
-        }
-    }
-
     public static void AddResource<T> (string name, string path, HubGames hubgame) where T : class
     {
-        if (knownHubGames[hubgame])
+        if (!resourceDict.HasKey(name))
         {
-            if (!resourceDict.HasKey(name))
-            {
-                resourceDict.Add<T>(name, Resources.Load(path, typeof(T)));
-            }
-        }
-        else
-        {
-            knownHubGames[hubgame] = true;
             resourceDict.Add<T>(name, Resources.Load(path, typeof(T)));
         }
     }

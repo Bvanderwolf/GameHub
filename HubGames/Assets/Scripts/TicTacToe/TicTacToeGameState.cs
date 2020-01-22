@@ -21,10 +21,6 @@ public class TicTacToeGameState : MonoBehaviour
         //add player sprites
         ResourceManager.AddResource<Sprite>("playerOne", "TicTacToe/delete", HubGames.TICTACTOE);
         ResourceManager.AddResource<Sprite>("playerTwo", "TicTacToe/circle-outline", HubGames.TICTACTOE);
-
-        //add audio
-        ResourceManager.AddResource<AudioClip>("place", "TicTacToe/tapv1", HubGames.TICTACTOE);
-        ResourceManager.AddResource<AudioClip>("gameEnd", "TicTacToe/endingmusic", HubGames.TICTACTOE);
     }
 
     private void Start ()

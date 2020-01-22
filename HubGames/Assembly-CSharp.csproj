@@ -72,6 +72,7 @@
     <Compile Include="Assets\Scripts\Generic\HubSettings.cs" />
     <Compile Include="Assets\Scripts\Generic\InputSystem.cs" />
     <Compile Include="Assets\Scripts\Generic\ResourceManager.cs" />
+    <Compile Include="Assets\Scripts\Generic\SoundSystem.cs" />
     <Compile Include="Assets\Scripts\Generic\Timer.cs" />
     <Compile Include="Assets\Scripts\Generic\TimerManager.cs" />
     <Compile Include="Assets\Scripts\Generic\UISystem.cs" />

@@ -6,12 +6,6 @@ public class SnakeGameState : MonoBehaviour
 
     private AudioSource audioSource;
 
-    private void Awake ()
-    {
-        ResourceManager.AddResource<AudioClip>("snakeEat", "Snake/snake_eat", HubGames.SNAKE);
-        ResourceManager.AddResource<AudioClip>("snakeHit", "Snake/snakeHit", HubGames.SNAKE);
-    }
-
     private void Start ()
     {
         audioSource = GetComponent<AudioSource>();

@@ -14,12 +14,6 @@ public class BreakoutGameState : MonoBehaviour
     private AudioClip endingSound;
     private AudioSource audioSource;
 
-    private void Awake ()
-    {
-        ResourceManager.AddResource<AudioClip>("breakoutEnding", "Breakout/breakoutEnd", HubGames.BREAKOUT);
-        ResourceManager.AddResource<AudioClip>("ballHit", "Breakout/ball_hit", HubGames.BREAKOUT);
-    }
-
     private void Start ()
     {
         if (InputSystem.Instance != null)

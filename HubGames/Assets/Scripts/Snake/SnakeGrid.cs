@@ -48,17 +48,15 @@ public class SnakeGrid : MonoBehaviour
         int gridXY = Mathf.RoundToInt((float)gridSize / 2);
         gridPositions = new Vector2[gridXY, gridXY];
 
-        float cellSizeX = canvasTF.rect.width / (float)gridXY;
-        float cellSizeY = canvasTF.rect.height / (float)gridXY;
+        float cellSize = canvasTF.rect.height / (float)gridXY;
 
-        float halfSizeX = cellSizeX / 2;
-        float halfSizeY = cellSizeY / 2;
+        float halfSize = cellSize / 2;
 
         for (int x = 0; x < gridPositions.GetLength(0); x++)
         {
             for (int y = 0; y < gridPositions.GetLength(1); y++)
             {
-                gridPositions[x, y] = new Vector2(halfSizeX + x * cellSizeX, halfSizeY + y * cellSizeY);
+                gridPositions[x, y] = new Vector2(halfSize + x * cellSize, halfSize + y * cellSize);
             }
         }
     }
