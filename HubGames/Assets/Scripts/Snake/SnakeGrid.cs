@@ -9,7 +9,7 @@ public class SnakeGrid : MonoBehaviour
 
     [SerializeField] private GameObject snakeHead;
 
-    private Vector2[,] gridPositions;
+    public Vector2[,] gridPositions { get; private set; }
 
     public event Action OnGridCollision;
 
@@ -30,6 +30,8 @@ public class SnakeGrid : MonoBehaviour
             }
         }
     }
+
+    public Vector2Int SnakeTargetGridPosition { get; private set; }
 
     // Start is called before the first frame update
     private void Start ()
@@ -100,6 +102,7 @@ public class SnakeGrid : MonoBehaviour
     {
         int gridX = Random.Range(0, gridPositions.GetLength(0));
         int gridY = Random.Range(0, gridPositions.GetLength(1));
+        SnakeTargetGridPosition = new Vector2Int(gridX, gridY);
         currentSnakeTarget = Instantiate(snakeTarget, gridPositions[gridX, gridY], Quaternion.identity, transform);
     }
 
@@ -109,14 +112,15 @@ public class SnakeGrid : MonoBehaviour
     /// </summary>
     /// <param name="gridPosition"></param>
     /// <returns></returns>
-    public Vector2 GetGridPosition (ref Vector2Int gridPosition)
+    public Vector2 GetGridPosition (Vector2Int gridPosition)
     {
-        if (gridPosition.x == gridPositions.GetLength(0)) gridPosition.x = 0;
-        if (gridPosition.x < 0) gridPosition.x = gridPositions.GetLength(0) - 1;
-        if (gridPosition.y == gridPositions.GetLength(1)) gridPosition.y = 0;
-        if (gridPosition.y < 0) gridPosition.y = gridPositions.GetLength(1) - 1;
-
-        return gridPositions[gridPosition.x, gridPosition.y];
+        int x = gridPosition.x;
+        int y = gridPosition.y;
+        if (x == gridPositions.GetLength(0)) x = 0;
+        if (x < 0) x = gridPositions.GetLength(0) - 1;
+        if (y == gridPositions.GetLength(1)) y = 0;
+        if (y < 0) y = gridPositions.GetLength(1) - 1;
+        return gridPositions[x, y];
     }
 
     /// <summary>
@@ -148,7 +152,6 @@ public class SnakeGrid : MonoBehaviour
 
         int randomGridPointX = Random.Range(controller.spawnMargin, gridPositions.GetLength(0) - controller.spawnMargin);
         int randomGridPointY = Random.Range(controller.spawnMargin, gridPositions.GetLength(1) - controller.spawnMargin);
-        snake.transform.position = gridPositions[randomGridPointX, randomGridPointY];
 
         //the start part count of the snake can't be larger than the spawnMargin
         if (controller.StartPartCount > controller.spawnMargin)
@@ -159,7 +162,7 @@ public class SnakeGrid : MonoBehaviour
 
         if (controller)
         {
-            controller.Init(this, gridPositions, new Vector2Int(randomGridPointX, randomGridPointY));
+            controller.Init(this, new Vector2Int(randomGridPointX, randomGridPointY));
             controller.OnSelfCollision += OnSnakeSelfCollision;
             controller.OnTargetCollision += OnSnakeTargetCollision;
         }

@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Collections;
-using UnityEngine;
+using System.Collections.Generic;
 using System.Linq;
-using System;
+using UnityEngine;
 using Random = UnityEngine.Random;
 
 public class SnakeController : MonoBehaviour
@@ -11,9 +11,11 @@ public class SnakeController : MonoBehaviour
     [SerializeField] private GameObject part;
 
     private List<GameObject> parts = new List<GameObject>();
+    private List<GrowPoint> growPoints = new List<GrowPoint>();
 
     [SerializeField] private Vector2Int gridPosition;
     [SerializeField] private Vector2Int gridDirection;
+    private Vector2Int lastTailPosition;
 
     private SnakeGrid grid;
     private AudioClip eatSound;
@@ -49,14 +51,10 @@ public class SnakeController : MonoBehaviour
 
     public event Action OnTargetCollision;
 
-    public void Init (SnakeGrid instance, Vector2[,] gridPositions, Vector2Int _myPosition)
+    public void Init (SnakeGrid instance, Vector2Int _myPosition)
     {
         grid = instance;
         parts.Add(this.gameObject);
-        grid.SetWidthHeightOfPart(this.gameObject);
-
-        int oneInFour = Random.Range(0, 5);
-        transform.rotation = Quaternion.Euler(0, 0, 90 * oneInFour);
 
         eatSound = ResourceManager.GetResource<AudioClip>("snakeEat");
         partAnimIndex = GetDefaultPartAnimationClipIndex();
@@ -69,7 +67,14 @@ public class SnakeController : MonoBehaviour
 
         InputSystem.Instance.OnDirectionKeyDown += OnDirectionChange;
 
-        CreateBody(instance, _myPosition);
+        //we initialize the body of the snake
+        InitBody(instance, _myPosition);
+
+        //we add a growing point with "start_Partcount" count to it
+        //making sure the snake has the right starting length
+        growPoints.Add(new GrowPoint((uint)start_Partcount, _myPosition));
+
+        //we start moving the snake
         StartCoroutine(MoveEnumerator());
     }
 
@@ -144,35 +149,74 @@ public class SnakeController : MonoBehaviour
         }
     }
 
-    //movement is doen by using an enumarator that moves the snake along the grid with "MOVEDELAY" delay in seconds
+    //movement is done by using an enumarator that moves the snake along the grid with "MOVEDELAY" delay in seconds
     private IEnumerator MoveEnumerator ()
     {
+        //while the game is not over the snake moves and tries growing
         while (!SnakeGameState.GameOver)
         {
             Move();
+            TryGrowBody();
             yield return new WaitForSeconds(movedelay);
             canTurn = true;
         }
     }
 
+    /// <summary>
+    /// tries growing the body looking at the growing points list
+    /// </summary>
+    private void TryGrowBody ()
+    {
+        //if there are no growing points or any with last tail position in the list we return
+        if (growPoints.Count == 0 || !growPoints.Any((gp) => gp.Position == lastTailPosition))
+            return;
+
+        //we get the index of the growing point and spawn a part at its position
+        int index = growPoints.IndexOf(growPoints.Find((gp) => gp.Position == lastTailPosition));
+        SpawnPartAt(grid.GetGridPosition(growPoints[index].Position));
+
+        //if the growing point doesn't have any more to add we remove it from the list
+        growPoints[index].DecreaseCount();
+        if (growPoints[index].Empty)
+        {
+            growPoints.RemoveAt(index);
+        }
+    }
+
+    /// <summary>
+    /// sets up a part at given position adding it to the parts list
+    /// </summary>
+    /// <param name="position"></param>
+    private void SpawnPartAt (Vector2 position)
+    {
+        GameObject partObj = Instantiate(part, position, Quaternion.identity, grid.transform);
+        grid.SetWidthHeightOfPart(partObj);
+        SetAnimationClipValues(partObj.GetComponent<Animator>());
+        parts.Add(partObj);
+    }
+
     private void Move ()
     {
-        if (grid)
+        if (!grid)
+            return;
+
+        //save tail position
+        GameObject tail = parts[parts.Count - 1];
+        lastTailPosition = grid.GetGridPosition(tail.transform.position);
+
+        //the snake moves along the grid by adding its direction to its current grid position
+        Vector2 nextPosition = grid.GetGridPosition(gridPosition + gridDirection);
+        gridPosition = grid.GetGridPosition(nextPosition);
+
+        //al parts their position is changed based on the part before it in the list
+        for (int i = parts.Count - 1; i >= 1; i--)
         {
-            //the snake moves along the grid by adding its direction to its current grid position
-            gridPosition += gridDirection;
-            Vector2 nextPosition = grid.GetGridPosition(ref gridPosition);
-
-            //al parts their position is changed based on the part before it in the list
-            for (int i = parts.Count - 1; i >= 1; i--)
-            {
-                parts[i].transform.position = parts[i - 1].transform.position;
-            }
-            transform.position = nextPosition;
-
-            //after all movement is finished we check for collisions
-            CheckForCollisions();
+            parts[i].transform.position = parts[i - 1].transform.position;
         }
+        transform.position = nextPosition;
+
+        //after all movement is finished we check for collisions
+        CheckForCollisions();
     }
 
     private void CheckForCollisions ()
@@ -198,22 +242,25 @@ public class SnakeController : MonoBehaviour
 
     private void EatSnack ()
     {
-        //when we eat a snack a new part is added based on the direction the snake is going and an event is raised
-        Vector2Int lastPartPosition = grid.GetGridPosition(parts[parts.Count - 1].transform.position);
-        Vector2Int partGridPosition = lastPartPosition - gridDirection;
-        Vector2 partPosition = grid.GetGridPosition(ref partGridPosition);
-        GameObject partObj = Instantiate(part, partPosition, Quaternion.identity, grid.transform);
-
-        grid.SetWidthHeightOfPart(partObj);
-        SetAnimationClipValues(partObj.GetComponent<Animator>());
-        parts.Add(partObj);
+        //when eating a snack we add a growing point at the end of the snake and throw an event
+        GameObject tail = parts[parts.Count - 1];
+        growPoints.Add(new GrowPoint(1, grid.SnakeTargetGridPosition));
         audioSource.PlayOneShot(eatSound);
         OnTargetCollision?.Invoke();
     }
 
-    private void CreateBody (SnakeGrid instance, Vector2Int _myPosition)
+    private void InitBody (SnakeGrid instance, Vector2Int _myPosition)
     {
+        //set position in grid
         gridPosition = _myPosition;
+
+        //set width and height based on screen resolution
+        grid.SetWidthHeightOfPart(this.gameObject);
+
+        //set orientation and position
+        int oneInFour = Random.Range(0, 5);
+        transform.rotation = Quaternion.Euler(0, 0, 90 * oneInFour);
+        transform.position = instance.gridPositions[_myPosition.x, _myPosition.y];
 
         //get lookdirection of snake and base of that the position of the parts behind the snake
         Vector3 inverseDirection = transform.rotation * Vector3.right;
@@ -222,16 +269,24 @@ public class SnakeController : MonoBehaviour
         //store the actual grid direction and move dimension (x = 0, and y = 1)
         gridDirection = new Vector2Int(-inverseGridDirection.x, -inverseGridDirection.y);
         moveDimension = (gridDirection.x == 1 || gridDirection.x == -1) ? 0 : 1;
+    }
 
-        //add snake parts to grid based on inverseDirection
-        for (int current = 0; current < start_Partcount; current++)
+    private class GrowPoint
+    {
+        public uint Count { get; private set; }
+        public readonly Vector2Int Position;
+
+        public bool Empty => Count == 0;
+
+        public GrowPoint (uint _count, Vector2Int _position)
         {
-            Vector2Int partGridPosition = gridPosition + inverseGridDirection * (current + 1);
-            Vector2 partPosition = instance.GetGridPosition(ref partGridPosition);
-            GameObject partObj = Instantiate(part, partPosition, Quaternion.identity, instance.gameObject.transform);
-            grid.SetWidthHeightOfPart(partObj);
-            SetAnimationClipValues(partObj.GetComponent<Animator>());
-            parts.Add(partObj);
+            Count = _count;
+            Position = _position;
+        }
+
+        public void DecreaseCount ()
+        {
+            if (Count > 0) Count--;
         }
     }
 }
