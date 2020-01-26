@@ -1,6 +1,6 @@
 # GameHub
 
-The game hub is meant as another step for me in the process of creating clean and optimal code. I do this by starting on a simple game, looking for the optimal way to create it. Up until now the game hub contains 4 games. At the moment, the idea will be to further optimize these games and give them additional features.
+The game hub is meant as another step for me in the process of creating clean and optimal code. I do this by creating a simple game, trying to find the optimal ways to add functionalities along the way. Up until now the game hub contains 4 games. At the moment, the idea will be to further optimize these games and give them additional features.
 
 ## Hub Games
 
