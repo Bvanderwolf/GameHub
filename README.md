@@ -4,15 +4,15 @@ The game hub is meant as another step for me in the process of creating clean an
 
 ## Hub Games
 
-1. Tic-Tac-Toe: 2 player, turn based game in which players put an icon an icon on one of the 9 places on the board 
+1. Tic-Tac-Toe: 2 player, turn based game in which players put an icon on one of the 9 places on the board 
 to create a horizontal, vertical or diagonal sequence. 
 
 2. Snake: the well known snake game in which the player controls a snake, eating candies to get bigger.
 
 3. Breakout: a game in which you have to bounce a ball against some tiles to eventualy break them and win.
 
-4. MatchThree: a game in which the player shoots gems, sticking them to once on the screen and trying to destroy them by creating 
-chains of gems. 
+4. MatchThree: a game in which the player shoots gems, sticking them to other ones on the screen and trying to destroy them by creating 
+chains. 
 
 ## Future ideas:
 
