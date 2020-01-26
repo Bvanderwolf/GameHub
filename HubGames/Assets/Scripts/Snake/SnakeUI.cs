@@ -7,12 +7,12 @@ public class SnakeUI : MonoBehaviour
     [SerializeField] private GameObject startGameText;
     [SerializeField] private int countdownCount;
 
-    public static event Action OnCountDownEnd;
+    public event Action OnCountDownEnd;
 
     private void Start ()
     {
         InputSystem.Instance.OnGameRestartInput += OnRestart;
-        SnakeGrid.OnGridCollision += OnGameOver;
+        FindObjectOfType<SnakeGrid>().OnGridCollision += OnGameOver;
 
         float startGameTextScale = startGameText.transform.localScale.x * HubSettings.Instance.ScreenRatio.x;
         UISystem.Instance.ScaleText(startGameText, startGameTextScale);
@@ -21,7 +21,6 @@ public class SnakeUI : MonoBehaviour
     private void OnDestroy ()
     {
         InputSystem.Instance.OnGameRestartInput -= OnRestart;
-        SnakeGrid.OnGridCollision -= OnGameOver;
     }
 
     private void OnGameOver ()

@@ -15,13 +15,13 @@ public class SnakeGameState : MonoBehaviour
         }
 
         InputSystem.Instance.OnGameRestartInput += OnSnakeRestart;
-        SnakeGrid.OnGridCollision += OnGameOver;
+        FindObjectOfType<SnakeGrid>().OnGridCollision += OnGameOver;
     }
 
     private void OnDestroy ()
     {
         InputSystem.Instance.OnGameRestartInput -= OnSnakeRestart;
-        SnakeGrid.OnGridCollision -= OnGameOver;
+        FindObjectOfType<SnakeGrid>().OnGridCollision -= OnGameOver;
         GameOver = true;
     }
 

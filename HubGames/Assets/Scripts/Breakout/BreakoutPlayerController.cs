@@ -15,7 +15,7 @@ public class BreakoutPlayerController : MonoBehaviour
 
     private void Start ()
     {
-        BreakoutGameState.OnGameOver += OnGameOver;
+        FindObjectOfType<BreakoutGameState>().OnGameOver += OnGameOver;
     }
 
     private void Update ()

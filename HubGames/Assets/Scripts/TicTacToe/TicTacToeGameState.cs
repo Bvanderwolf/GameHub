@@ -6,15 +6,15 @@ public class TicTacToeGameState : MonoBehaviour
     public static int NumOfPlayerPlaying { get; private set; }
     public static bool GameOver { get; private set; } = true;
 
-    public static event Action OnTurnEnd;
+    public event Action OnTurnEnd;
 
-    private const float STARTDELAY = 1.25f;
+    private readonly float startdelay = 1.25f;
 
     private AudioClip endingSound;
     private AudioSource audioSource;
 
-    private static Sprite playerOneSprite;
-    private static Sprite playerTwoSprite;
+    private Sprite playerOneSprite;
+    private Sprite playerTwoSprite;
 
     private void Awake ()
     {
@@ -32,13 +32,12 @@ public class TicTacToeGameState : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
 
         InputSystem.Instance.OnGameRestartInput += OnRestart;
-        TicTacToeGrid.OnGameOver += OnGameOver;
+        FindObjectOfType<TicTacToeGrid>().OnGameOver += OnGameOver;
     }
 
     private void OnDestroy ()
     {
         InputSystem.Instance.OnGameRestartInput -= OnRestart;
-        TicTacToeGrid.OnGameOver -= OnGameOver;
         GameOver = true;
     }
 
@@ -51,20 +50,20 @@ public class TicTacToeGameState : MonoBehaviour
     private void OnRestart ()
     {
         NumOfPlayerPlaying = 1;
-        TimerManager.Instance.AddTimer("gamestart", new Timer(STARTDELAY, () => OnTurnEnd?.Invoke()));
+        TimerManager.Instance.AddTimer("gamestart", new Timer(startdelay, () => OnTurnEnd?.Invoke()));
         GameOver = false;
     }
 
     /// <summary>
     /// switches numb of player playing
     /// </summary>
-    public static void SwitchTurns ()
+    public void SwitchTurns ()
     {
         NumOfPlayerPlaying = NumOfPlayerPlaying == 1 ? 2 : 1;
         if (!GameOver) OnTurnEnd?.Invoke();
     }
 
-    public static void SetNoWinner ()
+    public void SetNoWinner ()
     {
         NumOfPlayerPlaying = 0;
     }
@@ -73,7 +72,7 @@ public class TicTacToeGameState : MonoBehaviour
     /// get player sprite based on turn
     /// </summary>
     /// <returns></returns>
-    public static Sprite GetPlayerSprite ()
+    public Sprite GetPlayerSprite ()
     {
         return NumOfPlayerPlaying == 1 ? playerOneSprite : playerTwoSprite;
     }

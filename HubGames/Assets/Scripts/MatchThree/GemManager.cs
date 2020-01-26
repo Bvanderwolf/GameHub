@@ -333,7 +333,6 @@ public class GemManager : MonoBehaviour
         //we make sure the recruitPos is not out of bounds *Problem: exceptions override other gems which isnt intended
         if (recruitPosX < 0)
         {
-            Debug.Log("test1");
             if (!RelativePositions.TOP(side))
             {
                 recruitPosY++;
@@ -343,7 +342,6 @@ public class GemManager : MonoBehaviour
         }
         else if (recruitPosX >= GemSockets[recruitPosY].Count)
         {
-            Debug.Log("test2");
             if (!RelativePositions.TOP(side))
             {
                 recruitPosY++;

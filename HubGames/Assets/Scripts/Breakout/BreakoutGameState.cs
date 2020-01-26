@@ -9,7 +9,7 @@ public class BreakoutGameState : MonoBehaviour
 
     private GameObject breakoutBall;
 
-    public static event Action OnGameOver;
+    public event Action OnGameOver;
 
     private AudioClip endingSound;
     private AudioSource audioSource;

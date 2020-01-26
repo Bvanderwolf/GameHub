@@ -10,7 +10,7 @@ public class BreakoutUI : MonoBehaviour
         {
             InputSystem.Instance.OnGameRestartInput += OnRestart;
         }
-        BreakoutGameState.OnGameOver += OnGameOver;
+        FindObjectOfType<BreakoutGameState>().OnGameOver += OnGameOver;
     }
 
     private void OnRestart ()

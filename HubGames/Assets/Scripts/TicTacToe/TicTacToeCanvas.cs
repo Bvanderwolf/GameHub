@@ -18,8 +18,8 @@ public class TicTacToeCanvas : MonoBehaviour
     private void Start ()
     {
         UISystem.Instance.OnUISystemRestartEvent += OnRestart;
-        TicTacToeGrid.OnGameOver += OnGameOver;
-        TicTacToeGameState.OnTurnEnd += StartPlayerPlayingTextPopup;
+        FindObjectOfType<TicTacToeGrid>().OnGameOver += OnGameOver;
+        FindObjectOfType<TicTacToeGameState>().OnTurnEnd += StartPlayerPlayingTextPopup;
 
         ScaleUIText();
     }
@@ -33,8 +33,6 @@ public class TicTacToeCanvas : MonoBehaviour
     private void OnDestroy ()
     {
         UISystem.Instance.OnUISystemRestartEvent -= OnRestart;
-        TicTacToeGrid.OnGameOver -= OnGameOver;
-        TicTacToeGameState.OnTurnEnd -= StartPlayerPlayingTextPopup;
     }
 
     private void StartPlayerPlayingTextPopup ()

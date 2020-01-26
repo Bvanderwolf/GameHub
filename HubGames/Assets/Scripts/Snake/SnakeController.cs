@@ -22,9 +22,11 @@ public class SnakeController : MonoBehaviour
     private int moveDimension = 0;
     private bool canTurn = true;
 
-    private const float MOVEDELAY = 0.2f;
+    private readonly float movedelay = 0.2f;
 
     private readonly string defaultMoveAnimName = "partmove500x500";
+    public readonly int spawnMargin = 6;
+
     private int partAnimIndex;
 
     public int StartPartCount
@@ -36,7 +38,7 @@ public class SnakeController : MonoBehaviour
         set
         {
             //start part count can be influenced only if the value is not greater than SnakeGrid it's spawnmargin
-            if (value <= SnakeGrid.SPAWNMARGIN)
+            if (value <= spawnMargin)
             {
                 start_Partcount = value;
             }
@@ -148,7 +150,7 @@ public class SnakeController : MonoBehaviour
         while (!SnakeGameState.GameOver)
         {
             Move();
-            yield return new WaitForSeconds(MOVEDELAY);
+            yield return new WaitForSeconds(movedelay);
             canTurn = true;
         }
     }

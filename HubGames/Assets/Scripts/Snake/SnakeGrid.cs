@@ -4,9 +4,6 @@ using Random = UnityEngine.Random;
 
 public class SnakeGrid : MonoBehaviour
 {
-    [SerializeField, Tooltip("total gridsize meaning x times y")]
-    private int gridSize;
-
     [SerializeField] private RectTransform canvasTF;
     [SerializeField] private GameObject snakeTarget;
 
@@ -14,11 +11,10 @@ public class SnakeGrid : MonoBehaviour
 
     private Vector2[,] gridPositions;
 
-    public static readonly int SPAWNMARGIN = 6;
-
-    public static event Action OnGridCollision;
+    public event Action OnGridCollision;
 
     private GameObject currentSnakeTarget = null;
+    private readonly int pixelsPerGridCell = 20;
 
     public Vector3 SnakeTargetPosition
     {
@@ -40,15 +36,21 @@ public class SnakeGrid : MonoBehaviour
     {
         BuildGrid();
         SetWidthHeightOfPart(snakeTarget);
-        SnakeUI.OnCountDownEnd += OnStartSnakeGame;
+        FindObjectOfType<SnakeUI>().OnCountDownEnd += OnStartSnakeGame;
     }
 
     private void BuildGrid ()
     {
-        int gridXY = Mathf.RoundToInt((float)gridSize / 2);
-        gridPositions = new Vector2[gridXY, gridXY];
+        float gridSizeX = (float)Screen.width / pixelsPerGridCell;
+        float gridSizeY = (float)Screen.height / pixelsPerGridCell;
+        int gridX = Mathf.RoundToInt(gridSizeX * 0.5f);
+        int gridY = Mathf.RoundToInt(gridSizeY * 0.5f);
 
-        float cellSize = canvasTF.rect.height / (float)gridXY;
+        gridPositions = new Vector2[gridX, gridY];
+
+        float cellSize = canvasTF.rect.height / ((gridX + gridY) * 0.5f);
+        float cellSizeX = Screen.width / gridX;
+        float cellSizeY = Screen.height / gridY;
 
         float halfSize = cellSize / 2;
 
@@ -56,7 +58,7 @@ public class SnakeGrid : MonoBehaviour
         {
             for (int y = 0; y < gridPositions.GetLength(1); y++)
             {
-                gridPositions[x, y] = new Vector2(halfSize + x * cellSize, halfSize + y * cellSize);
+                gridPositions[x, y] = new Vector2(halfSize + x * cellSizeX, halfSize + y * cellSizeY);
             }
         }
     }
@@ -69,11 +71,6 @@ public class SnakeGrid : MonoBehaviour
         if (xSize > ySize) xSize = ySize;
         else if (ySize > xSize) ySize = xSize;
         rectTF.sizeDelta = new Vector2(xSize, ySize);
-    }
-
-    private void OnDestroy ()
-    {
-        SnakeUI.OnCountDownEnd -= OnStartSnakeGame;
     }
 
     private void OnSnakeSelfCollision ()
@@ -146,18 +143,17 @@ public class SnakeGrid : MonoBehaviour
     //when starting the snake game the snake is spawned on a random position inside the grid and initialized
     private void OnStartSnakeGame ()
     {
-        int randomGridPointX = Random.Range(SPAWNMARGIN, gridPositions.GetLength(0) - SPAWNMARGIN);
-        int randomGridPointY = Random.Range(SPAWNMARGIN, gridPositions.GetLength(1) - SPAWNMARGIN);
-        GameObject snake = Instantiate(snakeHead,
-            (Vector3)gridPositions[randomGridPointX, randomGridPointY],
-            Quaternion.identity,
-            transform);
-
+        GameObject snake = Instantiate(snakeHead, transform);
         SnakeController controller = snake.GetComponent<SnakeController>();
+
+        int randomGridPointX = Random.Range(controller.spawnMargin, gridPositions.GetLength(0) - controller.spawnMargin);
+        int randomGridPointY = Random.Range(controller.spawnMargin, gridPositions.GetLength(1) - controller.spawnMargin);
+        snake.transform.position = gridPositions[randomGridPointX, randomGridPointY];
+
         //the start part count of the snake can't be larger than the spawnMargin
-        if (controller.StartPartCount > SPAWNMARGIN)
+        if (controller.StartPartCount > controller.spawnMargin)
         {
-            controller.StartPartCount = SPAWNMARGIN;
+            controller.StartPartCount = controller.spawnMargin;
             Debug.LogWarning("start part count is higher than spawn margin, chance of out of bounds error :: Changing it to be equal");
         }
 

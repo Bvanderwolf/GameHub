@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class TicTacToeGrid : MonoBehaviour
 {
-    public static event Action OnGameOver;
+    public event Action OnGameOver;
 
     [SerializeField]
     private RectTransform canvasTF;
@@ -16,6 +16,9 @@ public class TicTacToeGrid : MonoBehaviour
 
     private AudioClip tapSound;
     private AudioSource audioSource;
+
+    [SerializeField]
+    private TicTacToeGameState gameState;
 
     private struct TakenCell
     {
@@ -29,7 +32,7 @@ public class TicTacToeGrid : MonoBehaviour
         }
     }
 
-    private const int GRIDSIZEXY = 3;
+    private readonly int gridSizeXY = 3;
 
     private Vector2[,] cells;
     private List<TakenCell> takenCells = new List<TakenCell>();
@@ -65,20 +68,20 @@ public class TicTacToeGrid : MonoBehaviour
     private void BuildGrid ()
     {
         //get grid layout group component reference and initialise cells array
-        cells = new Vector2[GRIDSIZEXY, GRIDSIZEXY];
+        cells = new Vector2[gridSizeXY, gridSizeXY];
 
-        cellHalfSize = canvasTF.rect.width / (GRIDSIZEXY * 2);
+        cellHalfSize = canvasTF.rect.width / (gridSizeXY * 2);
 
         float cellStartPosX = 0;
         float cellStartPosY = 0;
 
         //setup cells array with cell positions
-        for (int y = GRIDSIZEXY - 1; y >= 0; y--)
+        for (int y = gridSizeXY - 1; y >= 0; y--)
         {
-            cellStartPosY = (canvasTF.rect.height / GRIDSIZEXY) * (y - 1);
-            for (int x = 0; x < GRIDSIZEXY; x++)
+            cellStartPosY = (canvasTF.rect.height / gridSizeXY) * (y - 1);
+            for (int x = 0; x < gridSizeXY; x++)
             {
-                cellStartPosX = (canvasTF.rect.width / GRIDSIZEXY) * (x - 1);
+                cellStartPosX = (canvasTF.rect.width / gridSizeXY) * (x - 1);
                 cells[x, y] = new Vector2(canvasTF.anchoredPosition.x + cellStartPosX, canvasTF.anchoredPosition.y + cellStartPosY);
             }
         }
@@ -125,7 +128,7 @@ public class TicTacToeGrid : MonoBehaviour
                     {
                         PlaceItemOnBoard(cells[x, y], new Vector2Int(x, y));
                         CheckOnGameOverConditions();
-                        TicTacToeGameState.SwitchTurns();
+                        gameState.SwitchTurns();
                     }
                     x = cells.GetLength(0);
                     break;
@@ -149,12 +152,12 @@ public class TicTacToeGrid : MonoBehaviour
     private void CheckOnGameOverConditions ()
     {
         //only if the cell count is higher than 3 we check for game over condition
-        if (takenCells.Count >= GRIDSIZEXY)
+        if (takenCells.Count >= gridSizeXY)
         {
             //the game ends if the board has been filled with items
             if (takenCells.Count == cells.Length)
             {
-                TicTacToeGameState.SetNoWinner();
+                gameState.SetNoWinner();
                 OnGameOver?.Invoke();
             }
             else
@@ -192,7 +195,7 @@ public class TicTacToeGrid : MonoBehaviour
             getNextCellInSequence(startCell, new TakenCell(startCell.numOfPlayer, nextCell.position + orientation), orientation);
         }
 
-        if (diffX == GRIDSIZEXY || diffY == GRIDSIZEXY)
+        if (diffX == gridSizeXY || diffY == gridSizeXY)
         {
             if (!TicTacToeGameState.GameOver)
             {
@@ -211,7 +214,7 @@ public class TicTacToeGrid : MonoBehaviour
     {
         Debug.Log("places item on cell with position " + position + "on cell" + cell);
         Instantiate(image, position, Quaternion.identity, this.transform)
-            .GetComponent<Image>().sprite = TicTacToeGameState.GetPlayerSprite();
+            .GetComponent<Image>().sprite = gameState.GetPlayerSprite();
 
         takenCells.Add(new TakenCell(TicTacToeGameState.NumOfPlayerPlaying, cell));
         audioSource?.PlayOneShot(tapSound);

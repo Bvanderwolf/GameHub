@@ -9,10 +9,10 @@ public class BrickManager : MonoBehaviour
 
     private GameObject[,] brickArray;
 
-    private const float BRICK_MARGIN = 0.05f;
-    private const int MAX_COLLUMS = 5;
-    private const int DEFAULT_ROWS = 2;
-    private const int DEFAULT_BRICKCOUNT = 10;
+    private readonly float brickMargin = 0.05f;
+    private readonly int maxCollums = 5;
+    private readonly int defaultRows = 2;
+    private readonly int defaultBrickCount = 10;
 
     private void Start ()
     {
@@ -20,7 +20,7 @@ public class BrickManager : MonoBehaviour
         {
             InputSystem.Instance.OnGameRestartInput += OnRestart;
         }
-        BreakoutGameState.OnGameOver += OnGameOver;
+        FindObjectOfType<BreakoutGameState>().OnGameOver += OnGameOver;
     }
 
     private void OnDestroy ()
@@ -35,10 +35,10 @@ public class BrickManager : MonoBehaviour
     {
         /*if rows times collums is not equal to brick count
         we set them to default values*/
-        if (collums > MAX_COLLUMS)
+        if (collums > maxCollums)
         {
-            rows = DEFAULT_ROWS;
-            collums = MAX_COLLUMS;
+            rows = defaultRows;
+            collums = maxCollums;
         }
 
         brickArray = new GameObject[collums, rows];
@@ -59,7 +59,6 @@ public class BrickManager : MonoBehaviour
             }
         }
 
-        Debug.Log(rowsPerColor);
         float brickHalfWidth = brickPrefab.GetComponent<SpriteRenderer>().size.x * brickPrefab.transform.localScale.x;
         float brickHalfHeight = brickPrefab.GetComponent<SpriteRenderer>().size.y * brickPrefab.transform.localScale.y;
 
@@ -79,8 +78,8 @@ public class BrickManager : MonoBehaviour
             {
                 //to create a margin between each brick we add brick margin
                 Vector2 spawnPosition = startPosition + new Vector2(
-                    x * brickHalfWidth + x * BRICK_MARGIN,
-                    y * brickHalfHeight + y * BRICK_MARGIN);
+                    x * brickHalfWidth + x * brickMargin,
+                    y * brickHalfHeight + y * brickMargin);
                 brickArray[x, y] = Instantiate(brickPrefab, spawnPosition, Quaternion.identity, transform);
 
                 brickArray[x, y].GetComponent<BrickAttributes>().SetColor(brickColor);

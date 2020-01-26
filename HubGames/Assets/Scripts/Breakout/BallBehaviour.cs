@@ -6,7 +6,7 @@ public class BallBehaviour : MonoBehaviour
 {
     [SerializeField] private float startForce;
 
-    private Vector2 direction = new Vector2();
+    private Vector2 direction;
 
     public event Action OnBottomBoundHit;
 
@@ -14,6 +14,11 @@ public class BallBehaviour : MonoBehaviour
     private AudioSource audioSource;
 
     private void Awake ()
+    {
+        PushBallInRandomDirection();
+    }
+
+    private void PushBallInRandomDirection ()
     {
         while (direction.y < 0.2f)
         {

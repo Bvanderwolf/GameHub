@@ -539,6 +539,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canvasTF: {fileID: 1046945213}
   image: {fileID: 5726861350767569427, guid: 85592cf148ab1df45b6a7c3314341f58, type: 3}
+  gameState: {fileID: 95228467}
 --- !u!82 &866886120
 AudioSource:
   m_ObjectHideFlags: 0
