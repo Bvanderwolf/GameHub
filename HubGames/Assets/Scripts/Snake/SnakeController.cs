@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using SnackType = SnackSpawning.SnackType;
 
 public class SnakeController : MonoBehaviour
 {
@@ -25,11 +26,17 @@ public class SnakeController : MonoBehaviour
     private bool canTurn = true;
 
     private readonly float movedelay = 0.2f;
+    private readonly uint timedSnackGrowth = 2;
+    private uint snackGrowth = 1;
 
     private readonly string defaultMoveAnimName = "partmove500x500";
     public readonly int spawnMargin = 6;
 
     private int partAnimIndex;
+
+    private Timer snackTimer;
+
+    [SerializeField] private float timer;
 
     public int StartPartCount
     {
@@ -49,7 +56,9 @@ public class SnakeController : MonoBehaviour
 
     public event Action OnSelfCollision;
 
-    public event Action OnTargetCollision;
+    public event Action OnSnackCollision;
+
+    public event Action OnTimedSnackMissed;
 
     public void Init (SnakeGrid instance, Vector2Int _myPosition)
     {
@@ -162,6 +171,15 @@ public class SnakeController : MonoBehaviour
         }
     }
 
+    private void Update ()
+    {
+        if (snackTimer != null)
+        {
+            timer = snackTimer.RemainingTime;
+            snackTimer.Tick(Time.deltaTime);
+        }
+    }
+
     /// <summary>
     /// tries growing the body looking at the growing points list
     /// </summary>
@@ -232,9 +250,10 @@ public class SnakeController : MonoBehaviour
             {
                 Destroy(parts[i].gameObject);
             }
+            return;
         }
         //if any of the parts (including the head) is on the same position as the target it means we collided with a snack
-        if (parts.Any((go) => go.transform.position == grid.SnakeTargetPosition))
+        if (parts.Any((go) => go.transform.position == grid.CurrentSnackPosition))
         {
             EatSnack();
         }
@@ -243,10 +262,58 @@ public class SnakeController : MonoBehaviour
     private void EatSnack ()
     {
         //when eating a snack we add a growing point at the end of the snake and throw an event
-        GameObject tail = parts[parts.Count - 1];
-        growPoints.Add(new GrowPoint(1, grid.SnakeTargetGridPosition));
+        AddGrowtPoints();
+        CheckForSnackTimerReset();
         audioSource.PlayOneShot(eatSound);
-        OnTargetCollision?.Invoke();
+        OnSnackCollision?.Invoke();
+        CheckForTimedSnackSpawn();
+    }
+
+    //checks if the newly spawned snack is a timed snack
+    private void CheckForTimedSnackSpawn ()
+    {
+        if (grid.CurrentSnackType == SnackType.TIMED)
+        {
+            int diffX = Mathf.Abs(grid.CurrentSnackGridPosition.x - gridPosition.x);
+            int diffY = Mathf.Abs(grid.CurrentSnackGridPosition.y - gridPosition.y);
+            int stepCount = diffX + diffY;
+            float offset = movedelay * 0.5f;
+            float duration = stepCount * movedelay + offset;
+            Debug.Log(duration);
+            snackTimer = new Timer(duration, () =>
+            {
+                snackTimer = null;
+                OnTimedSnackMissed();
+            });
+        }
+    }
+
+    private void CheckForSnackTimerReset ()
+    {
+        if (snackTimer != null)
+        {
+            snackTimer = null;
+        }
+    }
+
+    private void AddGrowtPoints ()
+    {
+        uint growthCount = GetGrowth();
+        GameObject tail = parts[parts.Count - 1];
+        growPoints.Add(new GrowPoint(growthCount, grid.CurrentSnackGridPosition));
+    }
+
+    private uint GetGrowth ()
+    {
+        if (grid.CurrentSnackType == SnackType.SPECIAL)
+        {
+            return snackGrowth + 1;
+        }
+        if (grid.CurrentSnackType == SnackType.TIMED)
+        {
+            return snackGrowth + timedSnackGrowth;
+        }
+        return snackGrowth;
     }
 
     private void InitBody (SnakeGrid instance, Vector2Int _myPosition)

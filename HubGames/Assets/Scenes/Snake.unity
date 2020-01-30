@@ -327,6 +327,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1171774495}
   - component: {fileID: 1171774496}
+  - component: {fileID: 1171774497}
   m_Layer: 5
   m_Name: Grid
   m_TagString: Untagged
@@ -365,11 +366,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93091a74a279d344cb752af3e7127427, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSize: 50
   canvasTF: {fileID: 641852847}
-  snakeTarget: {fileID: 5255548557001649208, guid: ec9360ab65492c64795737cedac8ee50,
-    type: 3}
+  snack: {fileID: 5255548557001649208, guid: ec9360ab65492c64795737cedac8ee50, type: 3}
   snakeHead: {fileID: 61921883194245371, guid: 4055808413f1293488633ffa3b24ce15, type: 3}
+--- !u!114 &1171774497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1171774494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c129d1f9c177914295ae54cba987fbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1270508359
 GameObject:
   m_ObjectHideFlags: 0

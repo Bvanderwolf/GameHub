@@ -1,11 +1,12 @@
 ﻿using System;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using SnackType = SnackSpawning.SnackType;
 
 public class SnakeGrid : MonoBehaviour
 {
     [SerializeField] private RectTransform canvasTF;
-    [SerializeField] private GameObject snakeTarget;
+    [SerializeField] private GameObject snack;
 
     [SerializeField] private GameObject snakeHead;
 
@@ -13,16 +14,18 @@ public class SnakeGrid : MonoBehaviour
 
     public event Action OnGridCollision;
 
-    private GameObject currentSnakeTarget = null;
+    private GameObject currentSnack;
+    private SnackSpawning snackSpawning;
+
     private readonly int pixelsPerGridCell = 20;
 
-    public Vector3 SnakeTargetPosition
+    public Vector3 CurrentSnackPosition
     {
         get
         {
-            if (currentSnakeTarget)
+            if (currentSnack)
             {
-                return currentSnakeTarget.transform.position;
+                return currentSnack.transform.position;
             }
             else
             {
@@ -31,13 +34,17 @@ public class SnakeGrid : MonoBehaviour
         }
     }
 
-    public Vector2Int SnakeTargetGridPosition { get; private set; }
+    public Vector2Int CurrentSnackGridPosition { get; private set; }
+
+    private SnackType currentSnackType;
+    public SnackType CurrentSnackType => currentSnackType;
 
     // Start is called before the first frame update
     private void Start ()
     {
         BuildGrid();
-        SetWidthHeightOfPart(snakeTarget);
+        SetWidthHeightOfPart(snack);
+        snackSpawning = GetComponent<SnackSpawning>();
         FindObjectOfType<SnakeUI>().OnCountDownEnd += OnStartSnakeGame;
     }
 
@@ -78,9 +85,9 @@ public class SnakeGrid : MonoBehaviour
     private void OnSnakeSelfCollision ()
     {
         //when the snake collides with itself, the snaketarget is destroyed and an event is raised
-        if (currentSnakeTarget)
+        if (currentSnack)
         {
-            Destroy(currentSnakeTarget);
+            Destroy(currentSnack);
         }
         OnGridCollision?.Invoke();
     }
@@ -88,22 +95,22 @@ public class SnakeGrid : MonoBehaviour
     private void OnSnakeTargetCollision ()
     {
         //when the snake collides with the target, the target is destroyed and a new one is spawned
-        if (currentSnakeTarget)
+        if (currentSnack)
         {
-            Destroy(currentSnakeTarget);
+            Destroy(currentSnack);
         }
-        SpawnSnakeTarget();
+        SpawnSnakeSnack();
     }
 
     /// <summary>
     /// spawns a snake target at a random location inside the grid bounds
     /// </summary>
-    private void SpawnSnakeTarget ()
+    private void SpawnSnakeSnack ()
     {
         int gridX = Random.Range(0, gridPositions.GetLength(0));
         int gridY = Random.Range(0, gridPositions.GetLength(1));
-        SnakeTargetGridPosition = new Vector2Int(gridX, gridY);
-        currentSnakeTarget = Instantiate(snakeTarget, gridPositions[gridX, gridY], Quaternion.identity, transform);
+        CurrentSnackGridPosition = new Vector2Int(gridX, gridY);
+        currentSnack = snackSpawning.SpawnSnack(snack, gridPositions[gridX, gridY], out currentSnackType);
     }
 
     /// <summary>
@@ -164,13 +171,20 @@ public class SnakeGrid : MonoBehaviour
         {
             controller.Init(this, new Vector2Int(randomGridPointX, randomGridPointY));
             controller.OnSelfCollision += OnSnakeSelfCollision;
-            controller.OnTargetCollision += OnSnakeTargetCollision;
+            controller.OnSnackCollision += OnSnakeTargetCollision;
+            controller.OnTimedSnackMissed += OnSnakeMissedTimedSnack;
         }
         else
         {
             Debug.LogError("could not build snake :: controller is null");
         }
 
-        SpawnSnakeTarget();
+        SpawnSnakeSnack();
+    }
+
+    private void OnSnakeMissedTimedSnack ()
+    {
+        snackSpawning.ResetTimedSnack(currentSnack);
+        currentSnackType = SnackType.STANDARD;
     }
 }

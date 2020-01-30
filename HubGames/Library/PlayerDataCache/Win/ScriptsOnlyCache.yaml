@@ -16,6 +16,7 @@ ScriptsOnlyBuild:
     - MatchThreeGameState
     - MatchThreePlayerController
     - MatchThreeUI
+    - SnackSpawning
     - SnakeController
     - SnakeGameState
     - SnakeGrid
@@ -93,13 +94,13 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 10596}
     - Class: 114
-      Script: {instanceID: 11050}
+      Script: {instanceID: 11052}
     - Class: 114
-      Script: {instanceID: 11132}
+      Script: {instanceID: 11134}
     - Class: 114
-      Script: {instanceID: 11344}
+      Script: {instanceID: 11346}
     - Class: 114
-      Script: {instanceID: 11512}
+      Script: {instanceID: 11516}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -129,15 +130,11 @@ ScriptsOnlyBuild:
       Script: {instanceID: 0}
     - Class: 48
       Script: {instanceID: 0}
-    - Class: 74
-      Script: {instanceID: 0}
     - Class: 81
       Script: {instanceID: 0}
     - Class: 82
       Script: {instanceID: 0}
     - Class: 83
-      Script: {instanceID: 0}
-    - Class: 91
       Script: {instanceID: 0}
     - Class: 104
       Script: {instanceID: 0}
@@ -162,15 +159,15 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 10754}
     - Class: 114
-      Script: {instanceID: 11132}
+      Script: {instanceID: 10924}
     - Class: 114
-      Script: {instanceID: 11256}
+      Script: {instanceID: 11134}
     - Class: 114
-      Script: {instanceID: 11338}
+      Script: {instanceID: 11258}
     - Class: 114
-      Script: {instanceID: 11512}
+      Script: {instanceID: 11340}
     - Class: 114
-      Script: {instanceID: 13198}
+      Script: {instanceID: 11516}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -239,9 +236,9 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 10376}
     - Class: 114
-      Script: {instanceID: 11132}
+      Script: {instanceID: 11134}
     - Class: 114
-      Script: {instanceID: 11512}
+      Script: {instanceID: 11516}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -300,11 +297,13 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 10836}
     - Class: 114
-      Script: {instanceID: 11132}
+      Script: {instanceID: 11134}
     - Class: 114
-      Script: {instanceID: 11210}
+      Script: {instanceID: 11212}
     - Class: 114
-      Script: {instanceID: 11512}
+      Script: {instanceID: 11500}
+    - Class: 114
+      Script: {instanceID: 11516}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -353,11 +352,11 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 10732}
     - Class: 114
-      Script: {instanceID: 11132}
+      Script: {instanceID: 11134}
     - Class: 114
-      Script: {instanceID: 11372}
+      Script: {instanceID: 11374}
     - Class: 114
-      Script: {instanceID: 11512}
+      Script: {instanceID: 11516}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -571,7 +570,7 @@ ScriptsOnlyBuild:
     className: Shadow
   - hash:
       serializedVersion: 2
-      Hash: 8509942e9fb291a3fafbecff1a047884
+      Hash: fdc93db868cdbecfb73d018e35924db6
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: SnakeGrid
@@ -691,7 +690,7 @@ ScriptsOnlyBuild:
     className: RawImage
   - hash:
       serializedVersion: 2
-      Hash: 9d213673c37ae99d04aeb6c782f97444
+      Hash: e97ae8f9dfe9e76bfae0b3be947ceba4
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: TicTacToeGrid
@@ -763,6 +762,12 @@ ScriptsOnlyBuild:
     className: Physics2DRaycaster
   - hash:
       serializedVersion: 2
+      Hash: 71bb6a6b6c8f052f948db64c7dd3ca4f
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: SoundSystem
+  - hash:
+      serializedVersion: 2
       Hash: c1933cc0a2f4ff6eb13333347497beb3
     assemblyName: Unity.Timeline.dll
     namespaceName: UnityEngine.Timeline
@@ -799,7 +804,7 @@ ScriptsOnlyBuild:
     className: BeforeAfterTestCommandState
   - hash:
       serializedVersion: 2
-      Hash: f09aa09cd449abcecbac5874ed023a0b
+      Hash: edfee7d048645532ec394247f4ef0d32
     assemblyName: Assembly-CSharp.dll
     namespaceName: 
     className: SnakeController
@@ -883,6 +888,12 @@ ScriptsOnlyBuild:
     className: TMP_SubMesh
   - hash:
       serializedVersion: 2
+      Hash: 71bb6a6b6c8f052f948db64c7dd3ca4f
+    assemblyName: Assembly-CSharp.dll
+    namespaceName: 
+    className: SnackSpawning
+  - hash:
+      serializedVersion: 2
       Hash: 7090bc1e5ccaec2a9d0d1335ed8cee99
     assemblyName: UnityEngine.TestRunner.dll
     namespaceName: UnityEngine.TestTools.TestRunner
@@ -929,12 +940,6 @@ ScriptsOnlyBuild:
     assemblyName: Unity.Timeline.dll
     namespaceName: UnityEngine.Timeline
     className: PlayableTrack
-  - hash:
-      serializedVersion: 2
-      Hash: 71bb6a6b6c8f052f948db64c7dd3ca4f
-    assemblyName: Assembly-CSharp.dll
-    namespaceName: 
-    className: SoundSystem
   platform: 5
   scenePathNames:
   - Assets/Scenes/Hub.unity
